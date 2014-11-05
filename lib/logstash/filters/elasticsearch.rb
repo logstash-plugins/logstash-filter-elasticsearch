@@ -1,6 +1,7 @@
 require "logstash/filters/base"
 require "logstash/namespace"
 require "logstash/util/fieldreference"
+require "base64"
 
 
 # Search elasticsearch for a previous log event and copy some fields from it
@@ -44,12 +45,42 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Hash of fields to copy from old event (found via elasticsearch) into new event
   config :fields, :validate => :hash, :default => {}
 
+  # Basic Auth - username
+  config :user, :validate => :string
+
+  # Basic Auth - password
+  config :password, :validate => :password
+
+  # SSL
+  config :ssl, :validate => :boolean, :default => false
+
+  # SSL Certificate Authority file
+  config :ca_file, :validate => :path
+
+
   public
   def register
     require "elasticsearch"
 
-    @logger.info("New ElasticSearch filter", :hosts => @hosts)
-    @client = Elasticsearch::Client.new hosts: @hosts
+    transport_options = {}
+
+    if @user && @password
+      token = Base64.strict_encode64("#{@user}:#{@password.value}")
+      transport_options[:headers] = { Authorization: "Basic #{token}" }
+    end
+
+    hosts = if @ssl then
+      @hosts.map {|h| { host: h, scheme: 'https' } }
+    else
+      @hosts
+    end
+
+    if @ssl && @ca_file
+      transport_options[:ssl] = { ca_file: @ca_file }
+    end
+
+    @logger.info("New ElasticSearch filter", :hosts => hosts)
+    @client = Elasticsearch::Client.new hosts: hosts, transport_options: transport_options
   end # def register
 
   public
