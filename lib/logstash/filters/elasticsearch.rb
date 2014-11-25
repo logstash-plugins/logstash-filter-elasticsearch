@@ -38,8 +38,14 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # Elasticsearch query string
   config :query, :validate => :string
+ 
+  # Index to search in
+  config :index, :validate => :string, :default => ""
 
-  # Comma-delimited list of `<field>:<direction>` pairs that define the sort order
+  # Types to search in
+  config :type, :validate => :string, :default => ""
+
+  # Comma-delimited list of <field>:<direction> pairs that define the sort order
   config :sort, :validate => :string, :default => "@timestamp:desc"
 
   # Hash of fields to copy from old event (found via elasticsearch) into new event
@@ -79,8 +85,16 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       transport_options[:ssl] = { ca_file: @ca_file }
     end
 
-    @logger.info("New ElasticSearch filter", :hosts => hosts)
-    @client = Elasticsearch::Client.new hosts: hosts, transport_options: transport_options
+    @logger.info("New Elasticsearch filter", :hosts => hosts)
+
+    begin
+      @client = Elasticsearch::Client.new hosts: hosts, transport_options: transport_options
+      results = @client.search q: '*', size: 1
+    rescue => e
+      @logger.error("Failed to contact elasticsearch (required if you want this filter to actually work)",
+                   :error => e)
+    end
+
   end # def register
 
   public
@@ -90,10 +104,12 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     begin
       query_str = event.sprintf(@query)
 
-      results = @client.search q: query_str, sort: @sort, size: 1
+      results = @client.search index: @index, type: @type, q: query_str, sort: @sort, size: 1
 
-      @fields.each do |old, new|
-        event[new] = results['hits']['hits'][0]['_source'][old]
+      if not results['hits']['hits'].empty?
+        @fields.each do |old, new|
+          event[new] = results['hits']['hits'][0]['_source'][old]
+        end
       end
 
       filter_matched(event)
