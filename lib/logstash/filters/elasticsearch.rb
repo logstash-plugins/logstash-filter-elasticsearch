@@ -31,7 +31,6 @@ require "base64"
 #
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config_name "elasticsearch"
-  milestone 1
 
   # List of elasticsearch hosts to use for querying.
   config :hosts, :validate => :array
