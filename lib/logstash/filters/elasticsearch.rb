@@ -56,6 +56,16 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # SSL Certificate Authority file
   config :ca_file, :validate => :path
 
+  # Ignore errors; assume empty result set (query failed)
+  # Unsetting this turns off error logging as exceptions are unhandled
+  # This can make debugging the query somewhat tricky...
+  config :fail_on_error, :validate => :string, :default => "true"
+
+  # Whether results should be sorted or not
+  config :enable_sort, :validate => :string, :default => "true"
+
+  # How many results to return
+  config :result_size, :validate => :number, :default => 1
 
   public
   def register
@@ -88,17 +98,33 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
     begin
       query_str = event.sprintf(@query)
-
-      results = @client.search q: query_str, sort: @sort, size: 1
-
-      @fields.each do |old, new|
-        event[new] = results['hits']['hits'][0]['_source'][old]
+      if enable_sort == "true"
+        results = @client.search q: query_str, sort: @sort, size: result_size
+      else
+        results = @client.search q: query_str, size: result_size
       end
-
-      filter_matched(event)
+      @fields.each do |old,new|
+        if results['hits']['hits'].length > 0
+          event[new] = Set.new
+          results['hits']['hits'].each_with_index do |hit, index|
+            event[new].add hit['_source'][old]
+          end
+          if event[new].length > 0
+            event[new] = event[new].to_a
+          else
+            event = event.delete(new)
+          end
+        end
+      end
+      if results['hits']['hits'].length > 0
+        filter_matched(event)
+      end
+     
     rescue => e
-      @logger.warn("Failed to query elasticsearch for previous event",
+      if fail_on_error == "true"
+        @logger.warn("Failed to query elasticsearch for previous event",
                    :query => query_str, :event => event, :error => e)
+      end
     end
   end # def filter
 end # class LogStash::Filters::Elasticsearch
