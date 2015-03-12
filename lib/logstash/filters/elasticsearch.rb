@@ -93,7 +93,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     begin
       query_str = event.sprintf(@query)
 
-      results = @client.search index: @indexes, q: query_str, sort: @sort, size: 1
+      results = @client.search index: @indexes, q: query_str, sort: @sort, size: 1, ignore_unavailable: true
 
       @fields.each do |old, new|
         event[new] = results['hits']['hits'][0]['_source'][old]
