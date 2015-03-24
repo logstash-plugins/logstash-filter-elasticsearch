@@ -94,15 +94,19 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       query_str = event.sprintf(@query)
 
       results = @client.search index: @indexes, q: query_str, sort: @sort, size: 1, ignore_unavailable: true
-
-      @fields.each do |old, new|
-        event[new] = results['hits']['hits'][0]['_source'][old]
-      end
-
-      filter_matched(event)
+      hit = results['hits']['hits'][0]['_source'] rescue {}
     rescue => e
       @logger.warn("Failed to query elasticsearch for previous event",
                    :query => query_str, :event => event, :error => e)
+      hit = {}
     end
+
+    @fields.each do |old, new|
+      if hit.has_key?(old)
+        event[new] = hit[old]
+      end
+    end
+
+    filter_matched(event)
   end # def filter
 end # class LogStash::Filters::Elasticsearch
