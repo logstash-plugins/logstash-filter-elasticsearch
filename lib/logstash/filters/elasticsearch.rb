@@ -35,6 +35,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # List of elasticsearch hosts to use for querying.
   config :hosts, :validate => :array
 
+  # Elasticsearch index to search
+  config :index, :validate => :string, :default => "_all"
+
   # Elasticsearch query string
   config :query, :validate => :string
 
@@ -89,7 +92,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     begin
       query_str = event.sprintf(@query)
 
-      results = @client.search q: query_str, sort: @sort, size: 1
+      results = @client.search index: @index, q: query_str, sort: @sort, size: 1
 
       @fields.each do |old, new|
         event[new] = results['hits']['hits'][0]['_source'][old]
