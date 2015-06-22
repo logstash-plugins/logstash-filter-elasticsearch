@@ -38,6 +38,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Elasticsearch query string
   config :query, :validate => :string
 
+  # Index to query
+  config :index, :validate => :string, :default => "_all"
+
   # Comma-delimited list of `<field>:<direction>` pairs that define the sort order
   config :sort, :validate => :string, :default => "@timestamp:desc"
 
@@ -89,7 +92,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     begin
       query_str = event.sprintf(@query)
 
-      results = @client.search q: query_str, sort: @sort, size: 1
+      results = @client.search index: @index, q: query_str, sort: @sort, size: 1
 
       @fields.each do |old, new|
         event[new] = results['hits']['hits'][0]['_source'][old]
@@ -98,7 +101,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       filter_matched(event)
     rescue => e
       @logger.warn("Failed to query elasticsearch for previous event",
-                   :query => query_str, :event => event, :error => e)
+                   :index => @index, :query => query_str, :event => event, :error => e)
     end
   end # def filter
 end # class LogStash::Filters::Elasticsearch
