@@ -83,7 +83,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   public
   def filter(event)
-    return unless filter?(event)
+    
 
     begin
       query_str = event.sprintf(@query)
