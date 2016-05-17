@@ -34,6 +34,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # List of elasticsearch hosts to use for querying.
   config :hosts, :validate => :array
+  
+  # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices
+  config :index, :validate => :string, :default => ""
 
   # Elasticsearch query string. Read the Elasticsearch query string documentation
   # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/master/query-dsl-query-string-query.html#query-string-syntax
@@ -66,18 +69,17 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Tags the event on failure to look up geo information. This can be used in later analysis.
   config :tag_on_failure, :validate => :array, :default => ["_elasticsearch_lookup_failure"]
 
-  public
   def register
     options = {
       :ssl => @ssl,
       :hosts => @hosts,
       :ca_file => @ca_file,
-      :logger => @logger
+      :logger => @logger,
+      :index => @index
     }
     @client = LogStash::Filters::ElasticsearchClient.new(@user, @password, options)
   end # def register
 
-  public
   def filter(event)
     begin
       query_str = event.sprintf(@query)
@@ -96,7 +98,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         end
       end
     rescue => e
-      @logger.warn("Failed to query elasticsearch for previous event", :query => query_str, :event => event, :error => e)
+      @logger.warn("Failed to query elasticsearch for previous event", :index, @index, :query => query_str, :event => event, :error => e)
       @tag_on_failure.each{|tag| event.tag(tag)}
     end
     filter_matched(event)
