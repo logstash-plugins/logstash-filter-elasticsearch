@@ -15,7 +15,7 @@ require "base64"
 #          elasticsearch {
 #             hosts => ["es-server"]
 #             query => "type:start AND operation:%{[opid]}"
-#             fields => ["@timestamp", "started"]
+#             fields => [["@timestamp", "started"]]
 #          }
 #
 #          date {
