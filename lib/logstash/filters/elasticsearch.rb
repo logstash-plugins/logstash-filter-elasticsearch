@@ -1,6 +1,7 @@
 require "logstash/filters/base"
 require "logstash/namespace"
 require "base64"
+require "uri"
 
 
 # Search elasticsearch for a previous log event and copy some fields from it
@@ -32,9 +33,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config_name "elasticsearch"
 
   # List of elasticsearch hosts to use for querying.
-  config :hosts, :validate => :array
+  config :hosts, :validate => :array, :default => [ "localhost:9200" ]
   
-  # Advanced Transport Options usage
+  # Use transport_options to provide advanced options to underlying trasnport Library (Faraday)
   config :transport_options, :validate => :hash, :default => {}  
 
   # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices
@@ -68,17 +69,46 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
     transport_options = @transport_options
 
-    if @user && @password
-      token = Base64.strict_encode64("#{@user}:#{@password.value}")
-      transport_options[:headers] = { Authorization: "Basic #{token}" }
-    end
+    hosts = @hosts.map do |host| 
+        host_parts = case host
+          when String   
+            if host =~ /^[a-z]+\:\/\//
+              uri = URI.parse(host)
+              { :scheme => uri.scheme, :user => uri.user, :password => uri.password, :host => uri.host, :path => uri.path, :port => uri.port }
+            else
+              host, port = host.split(':')
+              { :host => host, :port => port }
+            end
+          when URI
+            { :scheme => host.scheme, :user => host.user, :password => host.password, :host => host.host, :path => host.path, :port => host.port }
+          when Hash
+            host
+          else
+            raise ArgumentError, "Please pass host as a String, URI or Hash -- #{host.class} given."
+          end
 
-    hosts = if @ssl then
-      @hosts.map {|h| { host: h, port: 9200, scheme: 'https' } }
-    else
-      @hosts
-    end
+        if host_parts[:port].nil?
+          host_parts[:port]=9200
+        else
+         host_parts[:port] = host_parts[:port].to_i
+        end
+        
+        if @ssl 
+            host_parts[:scheme] = 'https'
+        end
 
+        if @user && @password
+          if host_parts[:user].nil?
+            host_parts[:user] = @user
+          end
+          if host_parts[:password].nil?
+            host_parts[:password]  = @password
+          end
+        end
+
+        host_parts
+      end
+    
     if @ssl && @ca_file
       transport_options[:ssl] = { ca_file: @ca_file }
     end
