@@ -102,7 +102,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
             host_parts[:user] = @user
           end
           if host_parts[:password].nil?
-            host_parts[:password]  = @password
+            host_parts[:password]  = @password.value
           end
         end
 
