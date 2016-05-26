@@ -34,6 +34,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # List of elasticsearch hosts to use for querying.
   config :hosts, :validate => :array
   
+  # Advanced Transport Options usage
+  config :transport_options, :validate => :hash, :default => {}  
+
   # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices
   config :index, :validate => :string, :default => ""
 
@@ -63,7 +66,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   def register
     require "elasticsearch"
 
-    transport_options = {}
+    transport_options = @transport_options
 
     if @user && @password
       token = Base64.strict_encode64("#{@user}:#{@password.value}")
@@ -71,7 +74,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     end
 
     hosts = if @ssl then
-      @hosts.map {|h| { host: h, scheme: 'https' } }
+      @hosts.map {|h| { host: h, port: 9200, scheme: 'https' } }
     else
       @hosts
     end
