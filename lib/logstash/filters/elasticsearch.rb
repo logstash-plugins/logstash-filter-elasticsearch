@@ -34,7 +34,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # List of elasticsearch hosts to use for querying.
   config :hosts, :validate => :array
 
-  # Elasticsearch query string
+  # Elasticsearch query string. Read the Elasticsearch query DSL documentation
+  # for more info 
+  # https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html
   config :query, :validate => :string
 
   # Comma-delimited list of `<field>:<direction>` pairs that define the sort order
