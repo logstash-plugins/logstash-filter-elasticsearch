@@ -55,16 +55,14 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # SSL Certificate Authority file
   config :ca_file, :validate => :path
 
-  # Ignore errors; assume empty result set (query failed)
-  # Unsetting this turns off error logging as exceptions are unhandled
-  # This can make debugging the query somewhat tricky...
-  config :fail_on_error, :validate => :string, :default => "true"
-
   # Whether results should be sorted or not
-  config :enable_sort, :validate => :string, :default => "true"
+  config :enable_sort, :validate => :boolean, :default => true
 
   # How many results to return
   config :result_size, :validate => :number, :default => 1
+
+  # Tags the event on failure to look up geo information. This can be used in later analysis.
+  config :tag_on_failure, :validate => :array, :default => ["_elasticsearch_lookup_failure"]
 
   public
   def register
@@ -93,20 +91,19 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   public
   def filter(event)
-    
 
     begin
       query_str = event.sprintf(@query)
-      if enable_sort == "true"
-        results = @client.search q: query_str, sort: @sort, size: result_size
-      else
-        results = @client.search q: query_str, size: result_size
-      end
+
+      params = { :q => query_str, :size => result_size }
+      params[:sort] =  @sort if @enable_sort
+      results = @client.search(params)
+
       @fields.each do |old,new|
         if results['hits']['hits'].length > 0
           event[new] = Set.new
           results['hits']['hits'].each_with_index do |hit, index|
-            event[new].add hit['_source'][old]
+            event[new].add(hit['_source'][old])
           end
           if event[new].length > 0
             event[new] = event[new].to_a
@@ -115,15 +112,10 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
           end
         end
       end
-      if results['hits']['hits'].length > 0
-        filter_matched(event)
-      end
-     
     rescue => e
-      if fail_on_error == "true"
-        @logger.warn("Failed to query elasticsearch for previous event",
-                   :query => query_str, :event => event, :error => e)
-      end
+      @logger.warn("Failed to query elasticsearch for previous event", :query => query_str, :event => event, :error => e)
+      @tag_on_failure.each{|tag| event.tag(tag)}
     end
+    filter_matched(event)
   end # def filter
 end # class LogStash::Filters::Elasticsearch
