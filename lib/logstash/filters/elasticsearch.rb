@@ -103,4 +103,4 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     end
     filter_matched(event)
   end # def filter
-end # class LogStash::Filters::Elasticsearch
+end #class LogStash::Filters::Elasticsearch
