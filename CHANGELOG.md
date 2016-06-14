@@ -1,3 +1,5 @@
+## 3.0.0
+  - Breaking: Updated plugin to use new Java Event APIs
 ## 2.1.0
   - Improved the configuration options to be more easy to understand and
     match what the expectations are from the documentation.

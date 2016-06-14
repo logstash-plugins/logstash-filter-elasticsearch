@@ -83,6 +83,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   def filter(event)
     begin
       query_str = event.sprintf(@query)
+
       params = { :q => query_str, :size => result_size }
       params[:sort] =  @sort if @enable_sort
       results = @client.search(params)
@@ -93,7 +94,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
           results["hits"]["hits"].to_a.each do |doc|
             set << doc["_source"][old_key]
           end
-          event[new_key] = ( set.count > 1 ? set : set.first)
+          event.set(new_key, set.count > 1 ? set : set.first)
         end
       end
     rescue => e
