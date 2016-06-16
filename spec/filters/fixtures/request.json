@@ -1,0 +1,500 @@
+{
+	"took": 49,
+	"timed_out": false,
+	"_shards": {
+		"total": 155,
+		"successful": 155,
+		"failed": 0
+	},
+	"hits": {
+		"total": 13476,
+		"max_score": 1,
+		"hits": [{
+			"_index": "logstash-2014.08.26",
+			"_type": "logs",
+			"_id": "AVVY76L_AW7v0kX8KXo4",
+			"_score": 1,
+			"_source": {
+				"request": "/doc/index.html?org/elasticsearch/action/search/SearchResponse.html",
+				"agent": "\"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)\"",
+				"geoip": {
+					"timezone": "America/Los_Angeles",
+					"ip": "66.249.73.185",
+					"latitude": 37.386,
+					"continent_code": "NA",
+					"city_name": "Mountain View",
+					"country_code2": "US",
+					"country_name": "United States",
+					"dma_code": 807,
+					"country_code3": "US",
+					"region_name": "California",
+					"location": [-122.0838,
+						37.386
+					],
+					"postal_code": "94035",
+					"longitude": -122.0838,
+					"region_code": "CA"
+				},
+				"auth": "-",
+				"ident": "-",
+				"verb": "GET",
+				"useragent": {
+					"os": "Other",
+					"major": "2",
+					"minor": "1",
+					"name": "Googlebot",
+					"os_name": "Other",
+					"device": "Spider"
+				},
+				"message": "66.249.73.185 - - [26/Aug/2014:21:22:13 +0000] \"GET /doc/index.html?org/elasticsearch/action/search/SearchResponse.html HTTP/1.1\" 404 294 \"-\" \"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)\"",
+				"referrer": "\"-\"",
+				"@timestamp": "2014-08-26T21:22:13.000Z",
+				"response": 404,
+				"bytes": 294,
+				"clientip": "66.249.73.185",
+				"@version": "1",
+				"host": "skywalker",
+				"httpversion": "1.1",
+				"timestamp": "26/Aug/2014:21:22:13 +0000"
+			}
+		}, {
+			"_index": "logstash-2014.08.26",
+			"_type": "logs",
+			"_id": "AVVY76eJAW7v0kX8KXtH",
+			"_score": 1,
+			"_source": {
+				"request": "/presentations/logstash-puppetconf-2012/images/office-space-printer-beat-down-gif.gif",
+				"agent": "\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/536.30.1 (KHTML, like Gecko) Version/6.0.5 Safari/536.30.1\"",
+				"geoip": {
+					"timezone": "Asia/Shanghai",
+					"ip": "111.199.235.239",
+					"latitude": 39.9289,
+					"continent_code": "AS",
+					"city_name": "Beijing",
+					"country_code2": "CN",
+					"country_name": "China",
+					"dma_code": null,
+					"country_code3": "CN",
+					"region_name": "Beijing",
+					"location": [
+						116.3883,
+						39.9289
+					],
+					"postal_code": null,
+					"longitude": 116.3883,
+					"region_code": "11"
+				},
+				"auth": "-",
+				"ident": "-",
+				"verb": "GET",
+				"useragent": {
+					"patch": "5",
+					"os": "Mac OS X 10.8.5",
+					"major": "6",
+					"minor": "0",
+					"os_minor": "8",
+					"os_major": "10",
+					"name": "Safari",
+					"os_name": "Mac OS X",
+					"device": "Other"
+				},
+				"message": "111.199.235.239 - - [26/Aug/2014:22:06:06 +0000] \"GET /presentations/logstash-puppetconf-2012/images/office-space-printer-beat-down-gif.gif HTTP/1.1\" 404 364 \"http://semicomplete.com/presentations/logstash-puppetconf-2012/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/536.30.1 (KHTML, like Gecko) Version/6.0.5 Safari/536.30.1\"",
+				"referrer": "\"http://semicomplete.com/presentations/logstash-puppetconf-2012/\"",
+				"@timestamp": "2014-08-26T22:06:06.000Z",
+				"response": 404,
+				"bytes": 364,
+				"clientip": "111.199.235.239",
+				"@version": "1",
+				"host": "skywalker",
+				"httpversion": "1.1",
+				"timestamp": "26/Aug/2014:22:06:06 +0000"
+			}
+		}, {
+			"_index": "logstash-2014.08.26",
+			"_type": "logs",
+			"_id": "AVVY76eJAW7v0kX8KXtf",
+			"_score": 1,
+			"_source": {
+				"request": "/files/logstash/logstash-1.3.2-monolithic.jar",
+				"agent": "\"Chef Client/10.18.2 (ruby-1.9.3-p327; ohai-6.16.0; x86_64-linux; +http://opscode.com)\"",
+				"geoip": {
+					"timezone": "America/Los_Angeles",
+					"ip": "208.91.156.11",
+					"latitude": 34.0486,
+					"continent_code": "NA",
+					"city_name": "Los Angeles",
+					"country_code2": "US",
+					"country_name": "United States",
+					"dma_code": 803,
+					"country_code3": "US",
+					"region_name": "California",
+					"location": [-118.4424,
+						34.0486
+					],
+					"postal_code": "90025",
+					"longitude": -118.4424,
+					"region_code": "CA"
+				},
+				"auth": "-",
+				"ident": "-",
+				"verb": "GET",
+				"useragent": {
+					"os": "Other",
+					"name": "Other",
+					"os_name": "Other",
+					"device": "Other"
+				},
+				"message": "208.91.156.11 - - [26/Aug/2014:22:12:14 +0000] \"GET /files/logstash/logstash-1.3.2-monolithic.jar HTTP/1.1\" 404 324 \"-\" \"Chef Client/10.18.2 (ruby-1.9.3-p327; ohai-6.16.0; x86_64-linux; +http://opscode.com)\"",
+				"referrer": "\"-\"",
+				"@timestamp": "2014-08-26T22:12:14.000Z",
+				"response": 404,
+				"bytes": 324,
+				"clientip": "208.91.156.11",
+				"@version": "1",
+				"host": "skywalker",
+				"httpversion": "1.1",
+				"timestamp": "26/Aug/2014:22:12:14 +0000"
+			}
+		}, {
+			"_index": "logstash-2014.08.26",
+			"_type": "logs",
+			"_id": "AVVY761xAW7v0kX8KXvw",
+			"_score": 1,
+			"_source": {
+				"request": "/files/logstash/logstash-1.3.2-monolithic.jar",
+				"agent": "\"Chef Client/10.18.2 (ruby-1.9.3-p327; ohai-6.16.0; x86_64-linux; +http://opscode.com)\"",
+				"geoip": {
+					"timezone": "America/Los_Angeles",
+					"ip": "208.91.156.11",
+					"latitude": 34.0486,
+					"continent_code": "NA",
+					"city_name": "Los Angeles",
+					"country_code2": "US",
+					"country_name": "United States",
+					"dma_code": 803,
+					"country_code3": "US",
+					"region_name": "California",
+					"location": [-118.4424,
+						34.0486
+					],
+					"postal_code": "90025",
+					"longitude": -118.4424,
+					"region_code": "CA"
+				},
+				"auth": "-",
+				"ident": "-",
+				"verb": "GET",
+				"useragent": {
+					"os": "Other",
+					"name": "Other",
+					"os_name": "Other",
+					"device": "Other"
+				},
+				"message": "208.91.156.11 - - [26/Aug/2014:22:42:22 +0000] \"GET /files/logstash/logstash-1.3.2-monolithic.jar HTTP/1.1\" 404 324 \"-\" \"Chef Client/10.18.2 (ruby-1.9.3-p327; ohai-6.16.0; x86_64-linux; +http://opscode.com)\"",
+				"referrer": "\"-\"",
+				"@timestamp": "2014-08-26T22:42:22.000Z",
+				"response": 404,
+				"bytes": 324,
+				"clientip": "208.91.156.11",
+				"@version": "1",
+				"host": "skywalker",
+				"httpversion": "1.1",
+				"timestamp": "26/Aug/2014:22:42:22 +0000"
+			}
+		}, {
+			"_index": "logstash-2014.08.26",
+			"_type": "logs",
+			"_id": "AVVY77AwAW7v0kX8KXx8",
+			"_score": 1,
+			"_source": {
+				"request": "/wp-login.php",
+				"agent": "\"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/24.0.1290.1 Safari/537.13\"",
+				"geoip": {
+					"timezone": "Europe/Rome",
+					"ip": "195.250.34.144",
+					"latitude": 43.4995,
+					"continent_code": "EU",
+					"city_name": "Arezzo",
+					"country_code2": "IT",
+					"country_name": "Italy",
+					"dma_code": null,
+					"country_code3": "IT",
+					"region_name": "Province of Arezzo",
+					"location": [
+						11.9109,
+						43.4995
+					],
+					"postal_code": "52100",
+					"longitude": 11.9109,
+					"region_code": "AR"
+				},
+				"auth": "-",
+				"ident": "-",
+				"verb": "GET",
+				"useragent": {
+					"patch": "1290",
+					"os": "Windows 7",
+					"major": "24",
+					"minor": "0",
+					"name": "Chrome",
+					"os_name": "Windows 7",
+					"device": "Other"
+				},
+				"message": "195.250.34.144 - - [26/Aug/2014:23:40:50 +0000] \"GET /wp-login.php HTTP/1.1\" 404 292 \"-\" \"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/24.0.1290.1 Safari/537.13\"",
+				"referrer": "\"-\"",
+				"@timestamp": "2014-08-26T23:40:50.000Z",
+				"response": 404,
+				"bytes": 292,
+				"clientip": "195.250.34.144",
+				"@version": "1",
+				"host": "skywalker",
+				"httpversion": "1.1",
+				"timestamp": "26/Aug/2014:23:40:50 +0000"
+			}
+		}, {
+			"_index": "logstash-2014.08.26",
+			"_type": "logs",
+			"_id": "AVVY77AwAW7v0kX8KXyB",
+			"_score": 1,
+			"_source": {
+				"request": "/presentations/logstash-puppetconf-2012/images/office-space-printer-beat-down-gif.gif",
+				"agent": "\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.73.11 (KHTML, like Gecko) Version/6.1.1 Safari/537.73.11\"",
+				"geoip": {
+					"timezone": "Asia/Kolkata",
+					"ip": "122.166.142.108",
+					"latitude": 12.9833,
+					"continent_code": "AS",
+					"city_name": "Bengaluru",
+					"country_code2": "IN",
+					"country_name": "India",
+					"dma_code": null,
+					"country_code3": "IN",
+					"region_name": "Karnataka",
+					"location": [
+						77.5833,
+						12.9833
+					],
+					"postal_code": null,
+					"longitude": 77.5833,
+					"region_code": "KA"
+				},
+				"auth": "-",
+				"ident": "-",
+				"verb": "GET",
+				"useragent": {
+					"patch": "1",
+					"os": "Mac OS X 10.8.5",
+					"major": "6",
+					"minor": "1",
+					"os_minor": "8",
+					"os_major": "10",
+					"name": "Safari",
+					"os_name": "Mac OS X",
+					"device": "Other"
+				},
+				"message": "122.166.142.108 - - [26/Aug/2014:23:41:19 +0000] \"GET /presentations/logstash-puppetconf-2012/images/office-space-printer-beat-down-gif.gif HTTP/1.1\" 404 364 \"http://semicomplete.com/presentations/logstash-puppetconf-2012/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.73.11 (KHTML, like Gecko) Version/6.1.1 Safari/537.73.11\"",
+				"referrer": "\"http://semicomplete.com/presentations/logstash-puppetconf-2012/\"",
+				"@timestamp": "2014-08-26T23:41:19.000Z",
+				"response": 404,
+				"bytes": 364,
+				"clientip": "122.166.142.108",
+				"@version": "1",
+				"host": "skywalker",
+				"httpversion": "1.1",
+				"timestamp": "26/Aug/2014:23:41:19 +0000"
+			}
+		}, {
+			"_index": "logstash-2014.08.26",
+			"_type": "logs",
+			"_id": "AVVY77NUAW7v0kX8KX0s",
+			"_score": 1,
+			"_source": {
+				"request": "/projects/xdotool%3E",
+				"agent": "\"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)\"",
+				"geoip": {
+					"timezone": "America/Los_Angeles",
+					"ip": "66.249.73.135",
+					"latitude": 37.386,
+					"continent_code": "NA",
+					"city_name": "Mountain View",
+					"country_code2": "US",
+					"country_name": "United States",
+					"dma_code": 807,
+					"country_code3": "US",
+					"region_name": "California",
+					"location": [-122.0838,
+						37.386
+					],
+					"postal_code": "94035",
+					"longitude": -122.0838,
+					"region_code": "CA"
+				},
+				"auth": "-",
+				"ident": "-",
+				"verb": "GET",
+				"useragent": {
+					"os": "Other",
+					"major": "2",
+					"minor": "1",
+					"name": "Googlebot",
+					"os_name": "Other",
+					"device": "Spider"
+				},
+				"message": "66.249.73.135 - - [26/Aug/2014:23:25:32 +0000] \"GET /projects/xdotool%3E HTTP/1.1\" 404 7861 \"-\" \"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)\"",
+				"referrer": "\"-\"",
+				"@timestamp": "2014-08-26T23:25:32.000Z",
+				"response": 404,
+				"bytes": 7861,
+				"clientip": "66.249.73.135",
+				"@version": "1",
+				"host": "skywalker",
+				"httpversion": "1.1",
+				"timestamp": "26/Aug/2014:23:25:32 +0000"
+			}
+		}, {
+			"_index": "logstash-2014.08.27",
+			"_type": "logs",
+			"_id": "AVVY77vzAW7v0kX8KX5_",
+			"_score": 1,
+			"_source": {
+				"request": "/wp-login.php?action=register",
+				"agent": "\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:21.0) Gecko/20100101 Firefox/21.0\"",
+				"geoip": {
+					"timezone": "America/Chicago",
+					"ip": "198.143.145.210",
+					"latitude": 41.8825,
+					"continent_code": "NA",
+					"city_name": "Chicago",
+					"country_code2": "US",
+					"country_name": "United States",
+					"dma_code": 602,
+					"country_code3": "US",
+					"region_name": "Illinois",
+					"location": [-87.6441,
+						41.8825
+					],
+					"postal_code": "60661",
+					"longitude": -87.6441,
+					"region_code": "IL"
+				},
+				"auth": "-",
+				"ident": "-",
+				"verb": "GET",
+				"useragent": {
+					"os": "Mac OS X 10.7",
+					"major": "21",
+					"minor": "0",
+					"os_minor": "7",
+					"os_major": "10",
+					"name": "Firefox",
+					"os_name": "Mac OS X",
+					"device": "Other"
+				},
+				"message": "198.143.145.210 - - [27/Aug/2014:01:30:10 +0000] \"GET /wp-login.php?action=register HTTP/1.0\" 404 296 \"http://www.semicomplete.com/misc/sample.log\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:21.0) Gecko/20100101 Firefox/21.0\"",
+				"referrer": "\"http://www.semicomplete.com/misc/sample.log\"",
+				"@timestamp": "2014-08-27T01:30:10.000Z",
+				"response": 404,
+				"bytes": 296,
+				"clientip": "198.143.145.210",
+				"@version": "1",
+				"host": "skywalker",
+				"httpversion": "1.0",
+				"timestamp": "27/Aug/2014:01:30:10 +0000"
+			}
+		}, {
+			"_index": "logstash-2014.08.27",
+			"_type": "logs",
+			"_id": "AVVY77vzAW7v0kX8KX6w",
+			"_score": 1,
+			"_source": {
+				"request": "/projects/securitrack/config.xsl",
+				"agent": "\"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)\"",
+				"geoip": {
+					"timezone": "America/Los_Angeles",
+					"ip": "66.249.73.135",
+					"latitude": 37.386,
+					"continent_code": "NA",
+					"city_name": "Mountain View",
+					"country_code2": "US",
+					"country_name": "United States",
+					"dma_code": 807,
+					"country_code3": "US",
+					"region_name": "California",
+					"location": [-122.0838,
+						37.386
+					],
+					"postal_code": "94035",
+					"longitude": -122.0838,
+					"region_code": "CA"
+				},
+				"auth": "-",
+				"ident": "-",
+				"verb": "GET",
+				"useragent": {
+					"os": "Other",
+					"major": "2",
+					"minor": "1",
+					"name": "Googlebot",
+					"os_name": "Other",
+					"device": "Spider"
+				},
+				"message": "66.249.73.135 - - [27/Aug/2014:01:40:51 +0000] \"GET /projects/securitrack/config.xsl HTTP/1.1\" 404 315 \"-\" \"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)\"",
+				"referrer": "\"-\"",
+				"@timestamp": "2014-08-27T01:40:51.000Z",
+				"response": 404,
+				"bytes": 315,
+				"clientip": "66.249.73.135",
+				"@version": "1",
+				"host": "skywalker",
+				"httpversion": "1.1",
+				"timestamp": "27/Aug/2014:01:40:51 +0000"
+			}
+		}, {
+			"_index": "logstash-2014.08.27",
+			"_type": "logs",
+			"_id": "AVVY78FiAW7v0kX8KYBM",
+			"_score": 1,
+			"_source": {
+				"request": "/files/logstash/logstash-1.3.2-monolithic.jar",
+				"agent": "\"Chef Client/10.18.2 (ruby-1.9.3-p327; ohai-6.16.0; x86_64-linux; +http://opscode.com)\"",
+				"geoip": {
+					"timezone": "America/Los_Angeles",
+					"ip": "208.91.156.11",
+					"latitude": 34.0486,
+					"continent_code": "NA",
+					"city_name": "Los Angeles",
+					"country_code2": "US",
+					"country_name": "United States",
+					"dma_code": 803,
+					"country_code3": "US",
+					"region_name": "California",
+					"location": [-118.4424,
+						34.0486
+					],
+					"postal_code": "90025",
+					"longitude": -118.4424,
+					"region_code": "CA"
+				},
+				"auth": "-",
+				"ident": "-",
+				"verb": "GET",
+				"useragent": {
+					"os": "Other",
+					"name": "Other",
+					"os_name": "Other",
+					"device": "Other"
+				},
+				"message": "208.91.156.11 - - [27/Aug/2014:02:44:04 +0000] \"GET /files/logstash/logstash-1.3.2-monolithic.jar HTTP/1.1\" 404 324 \"-\" \"Chef Client/10.18.2 (ruby-1.9.3-p327; ohai-6.16.0; x86_64-linux; +http://opscode.com)\"",
+				"referrer": "\"-\"",
+				"@timestamp": "2014-08-27T02:44:04.000Z",
+				"response": 404,
+				"bytes": 324,
+				"clientip": "208.91.156.11",
+				"@version": "1",
+				"host": "skywalker",
+				"httpversion": "1.1",
+				"timestamp": "27/Aug/2014:02:44:04 +0000"
+			}
+		}]
+	}
+}
