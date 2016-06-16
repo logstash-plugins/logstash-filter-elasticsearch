@@ -1,6 +1,7 @@
+# encoding: utf-8
 require "logstash/filters/base"
 require "logstash/namespace"
-require "base64"
+require_relative "elasticsearch/client"
 
 
 # Search elasticsearch for a previous log event and copy some fields from it
@@ -66,32 +67,17 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   public
   def register
-    require "elasticsearch"
-
-    transport_options = {}
-
-    if @user && @password
-      token = Base64.strict_encode64("#{@user}:#{@password.value}")
-      transport_options[:headers] = { Authorization: "Basic #{token}" }
-    end
-
-    hosts = if @ssl then
-      @hosts.map {|h| { host: h, scheme: 'https' } }
-    else
-      @hosts
-    end
-
-    if @ssl && @ca_file
-      transport_options[:ssl] = { ca_file: @ca_file }
-    end
-
-    @logger.info("New ElasticSearch filter", :hosts => hosts)
-    @client = Elasticsearch::Client.new hosts: hosts, transport_options: transport_options
+    options = {
+      :ssl => @ssl,
+      :hosts => @hosts,
+      :ca_file => @ca_file,
+      :logger => @logger
+    }
+    @client = LogStash::Filters::ElasticsearchClient.new(@user, @password, options)
   end # def register
 
   public
   def filter(event)
-
     begin
       query_str = event.sprintf(@query)
 
@@ -99,17 +85,13 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       params[:sort] =  @sort if @enable_sort
       results = @client.search(params)
 
-      @fields.each do |old,new|
-        if results['hits']['hits'].length > 0
-          event[new] = Set.new
-          results['hits']['hits'].each_with_index do |hit, index|
-            event[new].add(hit['_source'][old])
+      @fields.each do |old_key|
+        if !results['hits']['hits'].empty?
+          set = []
+          results["hits"]["hits"].to_a.each do |doc|
+            set << doc["_source"][old_key]
           end
-          if event[new].length > 0
-            event[new] = event[new].to_a
-          else
-            event = event.delete(new)
-          end
+          event[old_key] = ( set.count > 1 ? set : set.first)
         end
       end
     rescue => e
