@@ -9,7 +9,7 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
     {
       "hosts" => ["localhost:9200"],
       "query" => "response: 404",
-      "fields" => [ "response" ],
+      "fields" => [ ["response", "code"] ],
     }
   end
   let(:plugin) { described_class.new(config) }
@@ -21,7 +21,7 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
 
   it "should enhance the current event with new data" do
     plugin.filter(event)
-    expect(event["response"]).to eq(404)
+    expect(event["code"]).to eq(404)
   end
 
   context "when retrieving a list of elements" do
@@ -30,14 +30,14 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
       {
         "hosts" => ["localhost:9200"],
         "query" => "response: 404",
-        "fields" => [ "response" ],
+        "fields" => [ ["response", "code"] ],
         "result_size" => 10
       }
     end
 
     it "should enhance the current event with new data" do
       plugin.filter(event)
-      expect(event["response"]).to eq([404]*10)
+      expect(event["code"]).to eq([404]*10)
     end
 
   end

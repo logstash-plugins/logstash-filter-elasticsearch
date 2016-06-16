@@ -88,13 +88,13 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       params[:sort] =  @sort if @enable_sort
       results = @client.search(params)
 
-      @fields.each do |old_key|
+      @fields.each do |old_key, new_key|
         if !results['hits']['hits'].empty?
           set = []
           results["hits"]["hits"].to_a.each do |doc|
             set << doc["_source"][old_key]
           end
-          event[old_key] = ( set.count > 1 ? set : set.first)
+          event[new_key] = ( set.count > 1 ? set : set.first)
         end
       end
     rescue => e
