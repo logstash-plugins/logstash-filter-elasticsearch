@@ -27,15 +27,15 @@ describe LogStash::Filters::Elasticsearch do
     let(:event)  { LogStash::Event.new({}) }
 
     let(:response) do
-      LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request.json")))
+      LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_x_1.json")))
     end
 
     let(:client) { double(:client) }
 
     before(:each) do
-      plugin.register
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
       allow(client).to receive(:search).and_return(response)
+      plugin.register
     end
 
     it "should enhance the current event with new data" do
@@ -54,6 +54,10 @@ describe LogStash::Filters::Elasticsearch do
         }
       end
 
+      let(:response) do
+        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_x_10.json")))
+      end
+
       it "should enhance the current event with new data" do
         plugin.filter(event)
         expect(event["code"]).to eq([404]*10)
@@ -63,9 +67,9 @@ describe LogStash::Filters::Elasticsearch do
     context "if something wrong happen during connection" do
 
       before(:each) do
-        plugin.register
         allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
         allow(client).to receive(:search).and_raise("connection exception")
+        plugin.register
       end
 
       it "tag the event as something happened, but still deliver it" do
