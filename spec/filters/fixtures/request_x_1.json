@@ -1,0 +1,62 @@
+{
+	"took": 49,
+	"timed_out": false,
+	"_shards": {
+		"total": 155,
+		"successful": 155,
+		"failed": 0
+	},
+	"hits": {
+		"total": 13476,
+		"max_score": 1,
+		"hits": [{
+			"_index": "logstash-2014.08.26",
+			"_type": "logs",
+			"_id": "AVVY76L_AW7v0kX8KXo4",
+			"_score": 1,
+			"_source": {
+				"request": "/doc/index.html?org/elasticsearch/action/search/SearchResponse.html",
+				"agent": "\"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)\"",
+				"geoip": {
+					"timezone": "America/Los_Angeles",
+					"ip": "66.249.73.185",
+					"latitude": 37.386,
+					"continent_code": "NA",
+					"city_name": "Mountain View",
+					"country_code2": "US",
+					"country_name": "United States",
+					"dma_code": 807,
+					"country_code3": "US",
+					"region_name": "California",
+					"location": [-122.0838,
+						37.386
+					],
+					"postal_code": "94035",
+					"longitude": -122.0838,
+					"region_code": "CA"
+				},
+				"auth": "-",
+				"ident": "-",
+				"verb": "GET",
+				"useragent": {
+					"os": "Other",
+					"major": "2",
+					"minor": "1",
+					"name": "Googlebot",
+					"os_name": "Other",
+					"device": "Spider"
+				},
+				"message": "66.249.73.185 - - [26/Aug/2014:21:22:13 +0000] \"GET /doc/index.html?org/elasticsearch/action/search/SearchResponse.html HTTP/1.1\" 404 294 \"-\" \"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)\"",
+				"referrer": "\"-\"",
+				"@timestamp": "2014-08-26T21:22:13.000Z",
+				"response": 404,
+				"bytes": 294,
+				"clientip": "66.249.73.185",
+				"@version": "1",
+				"host": "skywalker",
+				"httpversion": "1.1",
+				"timestamp": "26/Aug/2014:21:22:13 +0000"
+			}
+    }]
+	}
+}
