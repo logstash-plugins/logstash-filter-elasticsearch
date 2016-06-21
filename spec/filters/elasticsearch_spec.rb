@@ -40,7 +40,7 @@ describe LogStash::Filters::Elasticsearch do
 
     it "should enhance the current event with new data" do
       plugin.filter(event)
-      expect(event["code"]).to eq(404)
+      expect(event.get("code")).to eq(404)
     end
 
     context "when asking for more than one result" do
@@ -60,7 +60,7 @@ describe LogStash::Filters::Elasticsearch do
 
       it "should enhance the current event with new data" do
         plugin.filter(event)
-        expect(event["code"]).to eq([404]*10)
+        expect(event.get("code")).to eq([404]*10)
       end
     end
 
