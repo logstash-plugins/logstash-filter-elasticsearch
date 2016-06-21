@@ -21,7 +21,7 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
 
   it "should enhance the current event with new data" do
     plugin.filter(event)
-    expect(event["code"]).to eq(404)
+    expect(event.get("code")).to eq(404)
   end
 
   context "when retrieving a list of elements" do
@@ -37,7 +37,7 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
 
     it "should enhance the current event with new data" do
       plugin.filter(event)
-      expect(event["code"]).to eq([404]*10)
+      expect(event.get("code")).to eq([404]*10)
     end
 
   end
