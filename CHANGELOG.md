@@ -1,3 +1,6 @@
+## 3.0.1
+- Fix: wrong usage of search params, now if index is properly specified
+  it's passed to search so it's performed not to all indices if this is not the explicit intention.
 ## 3.0.0
   - Breaking: Updated plugin to use new Java Event APIs
 ## 2.1.0
