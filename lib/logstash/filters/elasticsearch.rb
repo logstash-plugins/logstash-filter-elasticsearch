@@ -74,8 +74,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       :ssl => @ssl,
       :hosts => @hosts,
       :ca_file => @ca_file,
-      :logger => @logger,
-      :index => @index
+      :logger => @logger
     }
     @client = LogStash::Filters::ElasticsearchClient.new(@user, @password, options)
   end # def register
@@ -83,7 +82,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   def filter(event)
     begin
       query_str = event.sprintf(@query)
-      params = { :q => query_str, :size => result_size }
+
+      params = { :q => query_str, :size => result_size, :index => @index }
       params[:sort] =  @sort if @enable_sort
       results = @client.search(params)
 

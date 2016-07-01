@@ -43,6 +43,28 @@ describe LogStash::Filters::Elasticsearch do
       expect(event["code"]).to eq(404)
     end
 
+    it "should receive all necessary params to perform the search" do
+      expect(client).to receive(:search).with({:q=>"response: 404", :size=>1, :index=>"", :sort=>"@timestamp:desc"})
+      plugin.filter(event)
+    end
+
+    context "when asking to hit specific index" do
+
+      let(:config) do
+        {
+          "index" => "foo*",
+          "hosts" => ["localhost:9200"],
+          "query" => "response: 404",
+          "fields" => [ ["response", "code"] ],
+        }
+      end
+
+      it "should receive all necessary params to perform the search" do
+        expect(client).to receive(:search).with({:q=>"response: 404", :size=>1, :index=>"foo*", :sort=>"@timestamp:desc"})
+        plugin.filter(event)
+      end
+    end
+
     context "when asking for more than one result" do
 
       let(:config) do
