@@ -23,7 +23,7 @@ module LogStash
         transport_options[:ssl] = { ca_file: options[:ca_file] } if ssl && options[:ca_file]
 
         @logger.info("New ElasticSearch filter", :hosts => hosts)
-        @client = ::Elasticsearch::Client.new(index: options[:index], hosts: hosts, transport_options: transport_options)
+        @client = ::Elasticsearch::Client.new(hosts: hosts, transport_options: transport_options)
       end
 
       def search(params)
