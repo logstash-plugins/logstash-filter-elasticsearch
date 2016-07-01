@@ -1,3 +1,6 @@
+## 2.1.1
+  - Fix: wrong usage of search params, now if index is properly specified
+    it's passed to search so it's performed not to all indices if this is not the explicit intention.
 ## 2.1.0
   - Improved the configuration options to be more easy to understand and
     match what the expectations are from the documentation.
