@@ -1,3 +1,6 @@
+## 3.0.2
+  - Relax constraint on logstash-core-plugin-api to >= 1.60 <= 2.99
+
 ## 3.0.1
 - Fix: wrong usage of search params, now if index is properly specified
   it's passed to search so it's performed not to all indices if this is not the explicit intention.
