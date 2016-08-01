@@ -2,7 +2,7 @@
 require "logstash/filters/base"
 require "logstash/namespace"
 require_relative "elasticsearch/client"
-
+require "logstash/json"
 
 # Search Elasticsearch for a previous log event and copy some fields from it
 # into the current event.  
@@ -44,7 +44,11 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # Elasticsearch query string. Read the Elasticsearch query string documentation
   # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/master/query-dsl-query-string-query.html#query-string-syntax
-  config :query, :validate => :string
+  config :query_string, :validate => :string
+
+  # File path to elasticsearch query in DSL format. Read the Elasticsearch query documentation
+  # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html
+  config :query_template, :validate => :string
 
   # Comma-delimited list of `<field>:<direction>` pairs that define the sort order
   config :sort, :validate => :string, :default => "@timestamp:desc"
@@ -81,16 +85,36 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       :logger => @logger
     }
     @client = LogStash::Filters::ElasticsearchClient.new(@user, @password, options)
+
+    #Load query if it exists
+    if @query_template
+      if File.zero?(@query_template)
+        raise "template is empty"
+      end
+      file = File.open(@query_template, "rb")
+      @query_dsl = file.read
+    end
+
   end # def register
 
   def filter(event)
     begin
-      query_str = event.sprintf(@query)
 
-      params = { :q => query_str, :size => result_size, :index => @index }
-      params[:sort] =  @sort if @enable_sort
+      params = {:index => @index }
+
+      if @query_dsl
+        query = LogStash::Json.load(event.sprintf(@query_dsl))
+        params[:body] = query
+      else
+        query = event.sprintf(@query_string)
+        params[:q] = query
+        params[:size] = result_size
+        params[:sort] =  @sort if @enable_sort
+      end
+
+      @logger.info("Querying elasticsearch for lookup", :params => params)
+
       results = @client.search(params)
-
       @fields.each do |old_key, new_key|
         if !results['hits']['hits'].empty?
           set = []
@@ -101,7 +125,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         end
       end
     rescue => e
-      @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query_str, :event => event, :error => e)
+      @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query, :event => event, :error => e)
       @tag_on_failure.each{|tag| event.tag(tag)}
     end
     filter_matched(event)

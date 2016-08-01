@@ -2,6 +2,7 @@
 require "elasticsearch"
 require "base64"
 
+
 module LogStash
   module Filters
     class ElasticsearchClient
@@ -28,6 +29,11 @@ module LogStash
 
       def search(params)
         @client.search(params)
+      end
+
+      def percolate(params)
+
+
       end
 
     end
