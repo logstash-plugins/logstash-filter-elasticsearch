@@ -19,7 +19,7 @@ describe LogStash::Filters::Elasticsearch do
     let(:config) do
       {
         "hosts" => ["localhost:9200"],
-        "query" => "response: 404",
+        "query_string" => "response: 404",
         "fields" => [ ["response", "code"] ],
       }
     end
@@ -54,7 +54,7 @@ describe LogStash::Filters::Elasticsearch do
         {
           "index" => "foo*",
           "hosts" => ["localhost:9200"],
-          "query" => "response: 404",
+          "query_string" => "response: 404",
           "fields" => [ ["response", "code"] ],
         }
       end
@@ -70,7 +70,7 @@ describe LogStash::Filters::Elasticsearch do
       let(:config) do
         {
           "hosts" => ["localhost:9200"],
-          "query" => "response: 404",
+          "query_string" => "response: 404",
           "fields" => [ ["response", "code"] ],
           "result_size" => 10
         }
@@ -100,6 +100,28 @@ describe LogStash::Filters::Elasticsearch do
         expect(event.to_hash["tags"]).to include("_elasticsearch_lookup_failure")
       end
     end
+
+    context "testing a simple query template" do
+      let(:config) do
+        {
+            "hosts" => ["localhost:9200"],
+            "query_template" => File.join(File.dirname(__FILE__), "fixtures", "query_template.json"),
+            "fields" => [ ["response", "code"] ],
+            "result_size" => 1
+        }
+      end
+
+      let(:response) do
+        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_x_1.json")))
+      end
+
+      it "should enhance the current event with new data" do
+        plugin.filter(event)
+        expect(event.get("code")).to eq(404)
+      end
+
+    end
+
   end
 
 end
