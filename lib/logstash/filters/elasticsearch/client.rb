@@ -9,7 +9,7 @@ module LogStash
       attr_reader :client
 
       def initialize(user, password, options={})
-        ssl     = options.fetch(:ssh, false)
+        ssl     = options.fetch(:ssl, false)
         hosts   = options[:hosts]
         @logger = options[:logger]
 
@@ -19,7 +19,7 @@ module LogStash
           transport_options[:headers] = { Authorization: "Basic #{token}" }
         end
 
-        host.map! {|h| { host: h, scheme: 'https' } } if ssl
+        hosts.map! {|h| { host: h, scheme: 'https' } } if ssl
         transport_options[:ssl] = { ca_file: options[:ca_file] } if ssl && options[:ca_file]
 
         @logger.info("New ElasticSearch filter", :hosts => hosts)
