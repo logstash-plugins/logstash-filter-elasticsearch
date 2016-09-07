@@ -122,6 +122,22 @@ describe LogStash::Filters::Elasticsearch do
 
     end
 
+    context "if query is on nested field" do
+      let(:config) do
+        {
+            "hosts" => ["localhost:9200"],
+            "query" => "response: 404",
+            "fields" => [ ["[geoip][ip]", "ip_address"] ]
+        }
+      end
+
+      it "should enhance the current event with new data" do
+        plugin.filter(event)
+        expect(event.get("ip_address")).to eq("66.249.73.185")
+      end
+
+    end
+
   end
 
 end
