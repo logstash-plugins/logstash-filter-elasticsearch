@@ -31,11 +31,6 @@ module LogStash
         @client.search(params)
       end
 
-      def percolate(params)
-
-
-      end
-
     end
   end
 end

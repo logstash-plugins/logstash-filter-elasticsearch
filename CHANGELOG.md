@@ -1,3 +1,5 @@
+## 3.1.0
+  - Support for full use of query DSL. Added query_template to use full DSL.
 ## 3.0.2
   - Relax constraint on logstash-core-plugin-api to >= 1.60 <= 2.99
 
