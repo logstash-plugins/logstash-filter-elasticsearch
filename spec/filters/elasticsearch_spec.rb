@@ -19,7 +19,7 @@ describe LogStash::Filters::Elasticsearch do
     let(:config) do
       {
         "hosts" => ["localhost:9200"],
-        "query_string" => "response: 404",
+        "query" => "response: 404",
         "fields" => [ ["response", "code"] ],
       }
     end
@@ -54,7 +54,7 @@ describe LogStash::Filters::Elasticsearch do
         {
           "index" => "foo*",
           "hosts" => ["localhost:9200"],
-          "query_string" => "response: 404",
+          "query" => "response: 404",
           "fields" => [ ["response", "code"] ],
         }
       end
@@ -70,7 +70,7 @@ describe LogStash::Filters::Elasticsearch do
       let(:config) do
         {
           "hosts" => ["localhost:9200"],
-          "query_string" => "response: 404",
+          "query" => "response: 404",
           "fields" => [ ["response", "code"] ],
           "result_size" => 10
         }
