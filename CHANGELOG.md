@@ -1,3 +1,6 @@
+## 3.1.0
+  - Support for full use of query DSL. Added query_template to use full DSL.
+
 ## 3.0.3
   - Fix couple of bugs related to incorrect variable names
 

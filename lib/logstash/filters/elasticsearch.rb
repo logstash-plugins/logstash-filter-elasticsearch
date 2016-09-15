@@ -5,10 +5,11 @@ require_relative "elasticsearch/client"
 require "logstash/json"
 
 # Search Elasticsearch for a previous log event and copy some fields from it
-# into the current event.  
+# into the current event.  Below are two complete examples of how this filter might
+# be used.
 #
-# Below is a complete example of how this filter might
-# be used.  Whenever Logstash receives an "end" event, it uses this Elasticsearch
+# The first example uses the legacy 'query' parameter where the user is limited to an Elasticsearch query_string.
+# Whenever logstash receives an "end" event, it uses this elasticsearch
 # filter to find the matching "start" event based on some operation identifier.
 # Then it copies the `@timestamp` field from the "start" event into a new field on
 # the "end" event.  Finally, using a combination of the "date" filter and the
@@ -31,8 +32,40 @@ require "logstash/json"
 #             code => "event['duration_hrs'] = (event['@timestamp'] - event['started']) / 3600 rescue nil"
 #          }
 #       }
-# --------------------------------------------------
 #
+#  The example below reproduces the above example but utilises the query_template.  This query_template represents a full
+#  Elasticsearch query DSL and supports the standard Logstash field substitution syntax.  The example below issues
+#  the same query as the first example but uses the template shown.
+#
+#   if [type] == "end" {
+#          elasticsearch {
+#             hosts => ["es-server"]
+#             query_template => "template.json"
+#          }
+#
+#          date {
+#             match => ["[started]", "ISO8601"]
+#             target => "[started]"
+#          }
+#
+#          ruby {
+#             code => "event['duration_hrs'] = (event['@timestamp'] - event['started']) / 3600 rescue nil"
+#          }
+#       }
+#
+#   template.json:
+#
+#  {
+#     "query": {
+#       "query_string": {
+#        "query": "type:start AND operation:%{[opid]}"
+#       }
+#     },
+#    "_source": ["@timestamp", "started"]
+#  }
+#
+# --------------------------------------------------
+
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config_name "elasticsearch"
 
@@ -42,9 +75,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices
   config :index, :validate => :string, :default => ""
 
-  # Elasticsearch query string. Read the Elasticsearch query string documentation
+  # Elasticsearch query string. Read the Elasticsearch query string documentation. Deprecated.
   # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/master/query-dsl-query-string-query.html#query-string-syntax
-  config :query_string, :validate => :string
+  config :query, :validate => :string, :deprecated => true
 
   # File path to elasticsearch query in DSL format. Read the Elasticsearch query documentation
   # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html
@@ -106,7 +139,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         query = LogStash::Json.load(event.sprintf(@query_dsl))
         params[:body] = query
       else
-        query = event.sprintf(@query_string)
+        query = event.sprintf(@query)
         params[:q] = query
         params[:size] = result_size
         params[:sort] =  @sort if @enable_sort
