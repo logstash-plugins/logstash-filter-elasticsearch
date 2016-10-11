@@ -51,7 +51,9 @@ require "logstash/json"
 #          ruby {
 #             code => "event['duration_hrs'] = (event['@timestamp'] - event['started']) / 3600 rescue nil"
 #          }
-#       }
+#   }
+#
+#
 #
 #   template.json:
 #
@@ -64,6 +66,9 @@ require "logstash/json"
 #    "_source": ["@timestamp", "started"]
 #  }
 #
+# As illustrated above, through the use of 'opid', fields from the Logstash events can be referenced within the template.
+# The template will be populated per event prior to being used to query Elasticsearch.
+#
 # --------------------------------------------------
 
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
@@ -75,9 +80,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices
   config :index, :validate => :string, :default => ""
 
-  # Elasticsearch query string. Read the Elasticsearch query string documentation. Deprecated.
+  # Elasticsearch query string. Read the Elasticsearch query string documentation.
   # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/master/query-dsl-query-string-query.html#query-string-syntax
-  config :query, :validate => :string, :deprecated => true
+  config :query, :validate => :string
 
   # File path to elasticsearch query in DSL format. Read the Elasticsearch query documentation
   # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html
