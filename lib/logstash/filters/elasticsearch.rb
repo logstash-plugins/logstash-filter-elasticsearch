@@ -5,13 +5,16 @@ require_relative "elasticsearch/client"
 
 
 # Search elasticsearch for a previous log event and copy some fields from it
-# into the current event.  Below is a complete example of how this filter might
+# into the current event.  
+
+# Below is a complete example of how this filter might
 # be used.  Whenever logstash receives an "end" event, it uses this elasticsearch
 # filter to find the matching "start" event based on some operation identifier.
 # Then it copies the `@timestamp` field from the "start" event into a new field on
 # the "end" event.  Finally, using a combination of the "date" filter and the
 # "ruby" filter, we calculate the time duration in hours between the two events.
 # [source,ruby]
+# --------------------------------------------------
 #       if [type] == "end" {
 #          elasticsearch {
 #             hosts => ["es-server"]
@@ -28,6 +31,7 @@ require_relative "elasticsearch/client"
 #             code => "event['duration_hrs'] = (event['@timestamp'] - event['started']) / 3600 rescue nil"
 #          }
 #       }
+# --------------------------------------------------
 #
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config_name "elasticsearch"
