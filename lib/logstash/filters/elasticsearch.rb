@@ -4,11 +4,11 @@ require "logstash/namespace"
 require_relative "elasticsearch/client"
 
 
-# Search elasticsearch for a previous log event and copy some fields from it
+# Search Elasticsearch for a previous log event and copy some fields from it
 # into the current event.  
 
 # Below is a complete example of how this filter might
-# be used.  Whenever logstash receives an "end" event, it uses this elasticsearch
+# be used.  Whenever Logstash receives an "end" event, it uses this Elasticsearch
 # filter to find the matching "start" event based on some operation identifier.
 # Then it copies the `@timestamp` field from the "start" event into a new field on
 # the "end" event.  Finally, using a combination of the "date" filter and the
