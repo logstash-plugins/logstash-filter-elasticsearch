@@ -6,7 +6,7 @@ require_relative "elasticsearch/client"
 
 # Search Elasticsearch for a previous log event and copy some fields from it
 # into the current event.  
-
+#
 # Below is a complete example of how this filter might
 # be used.  Whenever Logstash receives an "end" event, it uses this Elasticsearch
 # filter to find the matching "start" event based on some operation identifier.
