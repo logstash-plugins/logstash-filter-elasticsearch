@@ -150,7 +150,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         params[:sort] =  @sort if @enable_sort
       end
 
-      @logger.info("Querying elasticsearch for lookup", :params => params)
+      @logger.debug("Querying elasticsearch for lookup", :params => params)
 
       results = @client.search(params)
       @fields.each do |old_key, new_key|
