@@ -29,7 +29,7 @@ require "logstash/json"
 #          }
 #
 #          ruby {
-#             code => "event['duration_hrs'] = (event['@timestamp'] - event['started']) / 3600 rescue nil"
+#             code => "event.set('duration_hrs', (event.get('@timestamp') - event.get('started')) / 3600) rescue nil"
 #          }
 #       }
 #
@@ -49,7 +49,7 @@ require "logstash/json"
 #          }
 #
 #          ruby {
-#             code => "event['duration_hrs'] = (event['@timestamp'] - event['started']) / 3600 rescue nil"
+#             code => "event.set('duration_hrs', (event.get('@timestamp') - event.get('started')) / 3600) rescue nil"
 #          }
 #   }
 #
