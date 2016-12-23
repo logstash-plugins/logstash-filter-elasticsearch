@@ -1,3 +1,6 @@
+## 3.1.1
+  - Update the plugin documentation concerning the api change for the Event class
+
 ## 3.1.0
   - Support for full use of query DSL. Added query_template to use full DSL.
 
