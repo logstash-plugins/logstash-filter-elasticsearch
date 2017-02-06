@@ -14,7 +14,11 @@ module LogStash
         hosts   = options[:hosts]
         @logger = options[:logger]
 
-        transport_options = {}
+        transport_options = {
+          :headers => {
+            "Content-Type" => "application/json"
+          }
+        }
         if user && password
           token = ::Base64.strict_encode64("#{user}:#{password.value}")
           transport_options[:headers] = { Authorization: "Basic #{token}" }
