@@ -95,9 +95,34 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       it "tag the event as something happened, but still deliver it" do
-        expect(plugin.logger).to receive(:warn)
+        expect(plugin.logger).to receive(:warn).exactly(4).times
         plugin.filter(event)
         expect(event.to_hash["tags"]).to include("_elasticsearch_lookup_failure")
+      end
+    end
+
+    context "when first request fails and second request returns a result" do
+
+      let(:response) do
+        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_x_1.json")))
+      end
+
+      before(:each) do
+        allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
+
+        response_values = [:raise, response]
+        allow(client).to receive(:search).exactly(2).times do
+          v = response_values.shift
+          v == :raise ? raise("connection exception") : v
+        end
+
+        plugin.register
+      end
+
+      it "should warn logger only once and enhance the current event with new data" do
+        expect(plugin.logger).to receive(:warn)
+        plugin.filter(event)
+        expect(event.get("code")).to eq(404)
       end
     end
 

@@ -115,6 +115,15 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Tags the event on failure to look up geo information. This can be used in later analysis.
   config :tag_on_failure, :validate => :array, :default => ["_elasticsearch_lookup_failure"]
 
+  # How many times should the client retry a failing request. Set to -1 to try indefinitely.
+  config :automatic_retries, :validate => :number, :default => 3
+
+  # Set initial interval in seconds between retries. Doubled on each retry up to `retry_max_interval`.
+  config :retry_initial_interval, :validate => :number, :default => 1
+
+  # Set max interval in seconds between retries.
+  config :retry_max_interval, :validate => :number, :default => 1
+
   def register
     options = {
       :ssl => @ssl,
@@ -136,20 +145,22 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end # def register
 
   def filter(event)
+    params = {:index => @index }
+
+    if @query_dsl
+      query = LogStash::Json.load(event.sprintf(@query_dsl))
+      params[:body] = query
+    else
+      query = event.sprintf(@query)
+      params[:q] = query
+      params[:size] = result_size
+      params[:sort] =  @sort if @enable_sort
+    end
+
+    tries = @automatic_retries + 1
+    retry_interval = @retry_initial_interval
+
     begin
-
-      params = {:index => @index }
-
-      if @query_dsl
-        query = LogStash::Json.load(event.sprintf(@query_dsl))
-        params[:body] = query
-      else
-        query = event.sprintf(@query)
-        params[:q] = query
-        params[:size] = result_size
-        params[:sort] =  @sort if @enable_sort
-      end
-
       @logger.info("Querying elasticsearch for lookup", :params => params)
 
       results = @client.search(params)
@@ -163,9 +174,22 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         end
       end
     rescue => e
-      @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query, :event => event, :error => e)
-      @tag_on_failure.each{|tag| event.tag(tag)}
+      if (tries -= 1) != 0
+        @logger.warn("Failed to query elasticsearch for previous event, trying again in #{retry_interval} seconds", :index => @index, :query => query, :event => event, :error => e)
+        sleep(retry_interval)
+        retry_interval = next_sleep_interval(retry_interval)
+        retry
+      else
+        @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query, :event => event, :error => e)
+        @tag_on_failure.each{|tag| event.tag(tag)}
+      end
     end
     filter_matched(event)
   end # def filter
+
+  def next_sleep_interval(current_interval)
+    doubled = current_interval * 2
+    doubled > @retry_max_interval ? @retry_max_interval : doubled
+  end # def next_sleep_interval
+
 end #class LogStash::Filters::Elasticsearch
