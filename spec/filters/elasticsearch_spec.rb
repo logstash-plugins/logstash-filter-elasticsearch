@@ -101,6 +101,26 @@ describe LogStash::Filters::Elasticsearch do
       end
     end
 
+    context "testing a simple query template" do
+      let(:config) do
+        {
+            "hosts" => ["localhost:9200"],
+            "query_template" => File.join(File.dirname(__FILE__), "fixtures", "query_template.json"),
+            "fields" => [ ["response", "code"] ],
+            "result_size" => 1
+        }
+      end
+
+      let(:response) do
+        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_x_1.json")))
+      end
+
+      it "should enhance the current event with new data" do
+        plugin.filter(event)
+        expect(event.get("code")).to eq(404)
+      end
+
+    end
     context "when asking to copy _source field" do
       let(:config) do
         {

@@ -2,6 +2,7 @@
 require "elasticsearch"
 require "base64"
 
+
 module LogStash
   module Filters
     class ElasticsearchClient

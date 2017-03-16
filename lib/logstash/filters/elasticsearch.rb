@@ -2,21 +2,25 @@
 require "logstash/filters/base"
 require "logstash/namespace"
 require_relative "elasticsearch/client"
+require "logstash/json"
 
-
-# Search elasticsearch for a previous log event and copy some fields from it
-# into the current event.  Below is a complete example of how this filter might
-# be used.  Whenever logstash receives an "end" event, it uses this elasticsearch
+# Search Elasticsearch for a previous log event and copy some fields from it
+# into the current event.  Below are two complete examples of how this filter might
+# be used.
+#
+# The first example uses the legacy 'query' parameter where the user is limited to an Elasticsearch query_string.
+# Whenever logstash receives an "end" event, it uses this elasticsearch
 # filter to find the matching "start" event based on some operation identifier.
 # Then it copies the `@timestamp` field from the "start" event into a new field on
 # the "end" event.  Finally, using a combination of the "date" filter and the
 # "ruby" filter, we calculate the time duration in hours between the two events.
 # [source,ruby]
+# --------------------------------------------------
 #       if [type] == "end" {
 #          elasticsearch {
 #             hosts => ["es-server"]
 #             query => "type:start AND operation:%{[opid]}"
-#             fields => [["@timestamp", "started"]]
+#             fields => { "@timestamp" => "started" }
 #          }
 #
 #          date {
@@ -29,6 +33,44 @@ require_relative "elasticsearch/client"
 #          }
 #       }
 #
+#  The example below reproduces the above example but utilises the query_template.  This query_template represents a full
+#  Elasticsearch query DSL and supports the standard Logstash field substitution syntax.  The example below issues
+#  the same query as the first example but uses the template shown.
+#
+#   if [type] == "end" {
+#          elasticsearch {
+#             hosts => ["es-server"]
+#             query_template => "template.json"
+#          }
+#
+#          date {
+#             match => ["[started]", "ISO8601"]
+#             target => "[started]"
+#          }
+#
+#          ruby {
+#             code => "event['duration_hrs'] = (event['@timestamp'] - event['started']) / 3600 rescue nil"
+#          }
+#   }
+#
+#
+#
+#   template.json:
+#
+#  {
+#     "query": {
+#       "query_string": {
+#        "query": "type:start AND operation:%{[opid]}"
+#       }
+#     },
+#    "_source": ["@timestamp", "started"]
+#  }
+#
+# As illustrated above, through the use of 'opid', fields from the Logstash events can be referenced within the template.
+# The template will be populated per event prior to being used to query Elasticsearch.
+#
+# --------------------------------------------------
+
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config_name "elasticsearch"
 
@@ -38,9 +80,13 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices
   config :index, :validate => :string, :default => ""
 
-  # Elasticsearch query string. Read the Elasticsearch query string documentation
+  # Elasticsearch query string. Read the Elasticsearch query string documentation.
   # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/master/query-dsl-query-string-query.html#query-string-syntax
   config :query, :validate => :string
+
+  # File path to elasticsearch query in DSL format. Read the Elasticsearch query documentation
+  # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html
+  config :query_template, :validate => :string
 
   # Comma-delimited list of `<field>:<direction>` pairs that define the sort order
   config :sort, :validate => :string, :default => "@timestamp:desc"
@@ -78,16 +124,36 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       :logger => @logger
     }
     @client = LogStash::Filters::ElasticsearchClient.new(@user, @password, options)
+
+    #Load query if it exists
+    if @query_template
+      if File.zero?(@query_template)
+        raise "template is empty"
+      end
+      file = File.open(@query_template, "rb")
+      @query_dsl = file.read
+    end
+
   end # def register
 
   def filter(event)
     begin
-      query_str = event.sprintf(@query)
 
-      params = { :q => query_str, :size => result_size, :index => @index }
-      params[:sort] =  @sort if @enable_sort
+      params = {:index => @index }
+
+      if @query_dsl
+        query = LogStash::Json.load(event.sprintf(@query_dsl))
+        params[:body] = query
+      else
+        query = event.sprintf(@query)
+        params[:q] = query
+        params[:size] = result_size
+        params[:sort] =  @sort if @enable_sort
+      end
+
+      @logger.info("Querying elasticsearch for lookup", :params => params)
+
       results = @client.search(params)
-
       @fields.each do |old_key, new_key|
         if !results['hits']['hits'].empty?
           set = []
@@ -98,7 +164,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         end
       end
     rescue => e
-      @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query_str, :event => event, :error => e)
+      @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query, :event => event, :error => e)
       @tag_on_failure.each{|tag| event.tag(tag)}
     end
     filter_matched(event)
