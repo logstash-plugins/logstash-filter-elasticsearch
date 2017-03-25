@@ -1,3 +1,6 @@
+## 3.1.2
+  - Docs: Add requirement to use version 3.1.1 or higher to support sending Content-Type headers.
+  
 ## 3.1.1
   - Upgrade es-ruby client to support correct content-type
 

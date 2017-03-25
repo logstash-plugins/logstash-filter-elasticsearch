@@ -4,6 +4,16 @@ require "logstash/namespace"
 require_relative "elasticsearch/client"
 require "logstash/json"
 
+# .Compatibility Note
+# [NOTE]
+# ================================================================================
+# Starting with Elasticsearch 5.3, there's an {ref}modules-http.html[HTTP setting]
+# called `http.content_type.required`. If this option is set to `true`, and you
+# are using Logstash 2.4 through 5.2, you need to update the Elasticsearch filter
+# plugin to version 3.1.1 or higher.
+# 
+# ================================================================================
+# 
 # Search Elasticsearch for a previous log event and copy some fields from it
 # into the current event.  Below are two complete examples of how this filter might
 # be used.
