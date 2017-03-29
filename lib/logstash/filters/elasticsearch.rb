@@ -148,8 +148,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   def filter(event)
     begin
 
-      params = {:index => @index }
-
+      params = {:index => event.sprintf(@index) }
+      
       if @query_dsl
         query = LogStash::Json.load(event.sprintf(@query_dsl))
         params[:body] = query
