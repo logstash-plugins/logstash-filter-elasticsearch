@@ -1,3 +1,6 @@
+## 3.1.3
+  - Change the queries loglevel from info to debug.
+
 ## 3.1.0
   - Support for full use of query DSL. Added query_template to use full DSL.
 
