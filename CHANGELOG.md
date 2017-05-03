@@ -1,3 +1,6 @@
+## 3.1.3
+  - Change the queries loglevel from info to debug.
+
 ## 3.1.2
   - Docs: Add requirement to use version 3.1.1 or higher to support sending Content-Type headers.
   
