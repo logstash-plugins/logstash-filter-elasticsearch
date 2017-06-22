@@ -175,11 +175,11 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         if !results['hits']['hits'].empty?
           set = []
           results["hits"]["hits"].to_a.each do |doc|
-            index_type_id_key = []
-            index_type_id_key << doc["_index"]
-            index_type_id_key << doc["_type"]
-            index_type_id_key << doc["_id"]
-            index_type_id_key << doc["_source"][old_key]
+            index_type_id_key = {}
+            index_type_id_key["_index"] = doc["_index"]
+            index_type_id_key["_type"] = doc["_type"]
+            index_type_id_key["_id"] = doc["_id"]
+            index_type_id_key[old_key] = doc["_source"][old_key]
             set << index_type_id_key
           end
           event.set(new_key, set.count > 1 ? set : set.first)
