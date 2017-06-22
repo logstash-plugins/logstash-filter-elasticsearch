@@ -1,3 +1,6 @@
+## 3.1.4
+  - Added access the [@metadata][_index|_type|_id] in the fiter results
+
 ## 3.1.3
   - Change the queries loglevel from info to debug.
 
