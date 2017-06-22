@@ -174,22 +174,15 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       @fields.each do |old_key, new_key|
         if !results['hits']['hits'].empty?
           set = []
-          doc_index = []
-          doc_type = []
-          doc_id = []
           results["hits"]["hits"].to_a.each do |doc|
-            set << doc["_source"][old_key]
-            !doc_index.include? doc["_index"] ? doc_index << doc["_index"] : nil
-            !doc_type.include? doc["_type"] ? doc_type << doc["_type"] : nil
-            !doc_id.include? doc["_id"] ? doc_id << doc["_id"] : nil
+            index_type_id_key = []
+            index_type_id_key << doc["_index"]
+            index_type_id_key << doc["_type"]
+            index_type_id_key << doc["_id"]
+            index_type_id_key << doc["_source"][old_key]
+            set << index_type_id_key
           end
-          doc_index = doc_index.uniq
-          doc_type = doc_type.uniq
-          doc_id = doc_id.uniq
           event.set(new_key, set.count > 1 ? set : set.first)
-          event.set("_index", doc_index.count > 1 ? doc_index : doc_index.first)
-          event.set("_type", doc_type.count > 1 ? doc_type : doc_type.first)
-          event.set("_id", doc_id.count > 1 ? doc_id : doc_id.first)
         end
       end
     rescue => e

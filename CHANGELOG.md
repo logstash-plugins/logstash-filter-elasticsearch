@@ -1,4 +1,7 @@
 ## 3.1.4
+  - all the result dataset is appended with its corresponding [@metadata][_index|_type|_id]
+
+## 3.1.4
   - Added access the [@metadata][_index|_type|_id] in the fiter results
 
 ## 3.1.3
