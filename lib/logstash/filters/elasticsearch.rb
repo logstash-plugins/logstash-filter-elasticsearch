@@ -125,6 +125,14 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Tags the event on failure to look up geo information. This can be used in later analysis.
   config :tag_on_failure, :validate => :array, :default => ["_elasticsearch_lookup_failure"]
 
+  # This allows you to set the maximum number of hits returned per scroll.
+  config :size, :validate => :number, :default => 1000
+
+  # This parameter controls the keepalive time in seconds of the scrolling
+  # request and initiates the scrolling process. The timeout applies per
+  # round trip (i.e. between the previous scroll request, to the next).
+  config :scroll, :validate => :string, :default => "1m"
+
   def register
     options = {
       :ssl => @ssl,
@@ -167,7 +175,12 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         if !results['hits']['hits'].empty?
           set = []
           results["hits"]["hits"].to_a.each do |doc|
-            set << doc["_source"][old_key]
+            index_type_id_key = {}
+            index_type_id_key["_index"] = doc["_index"]
+            index_type_id_key["_type"] = doc["_type"]
+            index_type_id_key["_id"] = doc["_id"]
+            index_type_id_key[old_key] = doc["_source"][old_key]
+            set << index_type_id_key
           end
           event.set(new_key, set.count > 1 ? set : set.first)
         end
