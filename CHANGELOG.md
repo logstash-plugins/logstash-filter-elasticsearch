@@ -1,3 +1,6 @@
+## 3.1.4
+  - added total_hits (boolean) flag to return the complete "hits" array including the _index, _type, _id, _score and _source for the matching query
+
 ## 3.1.3
   - Change the queries loglevel from info to debug.
 

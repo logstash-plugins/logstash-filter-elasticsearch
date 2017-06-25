@@ -124,6 +124,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # Tags the event on failure to look up geo information. This can be used in later analysis.
   config :tag_on_failure, :validate => :array, :default => ["_elasticsearch_lookup_failure"]
+    
+  # total_hits (full data set)
+    config :total_hits, :validate => :boolean, :default => false
 
   def register
     options = {
@@ -161,8 +164,24 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       end
 
       @logger.debug("Querying elasticsearch for lookup", :params => params)
-
       results = @client.search(params)
+
+      if (@total_hits == true)
+        if !results['hits']['hits'].empty?
+          set = []
+          results["hits"]["hits"].to_a.each do |doc|
+            dataset = {}
+            dataset["_index"] = doc["_index"]
+            dataset["_type"] = doc["_type"]
+            dataset["_id"] = doc["_id"]
+            dataset["_source"] = doc["_source"]
+            set << dataset
+          end
+          event.set("filter_count", set.count)
+          event.set("filter_hits", set)
+        end
+      end #@total_hits == true
+
       @fields.each do |old_key, new_key|
         if !results['hits']['hits'].empty?
           set = []
@@ -172,7 +191,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
           event.set(new_key, set.count > 1 ? set : set.first)
         end
       end
-    rescue => e
+
+      rescue => e
       @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query, :event => event, :error => e)
       @tag_on_failure.each{|tag| event.tag(tag)}
     end
