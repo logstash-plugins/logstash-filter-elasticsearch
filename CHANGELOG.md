@@ -1,3 +1,9 @@
+## 3.1.5
+ - Docs: Fix broken link to Logstash docs.
+
+## 3.1.4
+ - Docs: Bump patch level for doc build.
+
 ## 3.1.3
   - Change the queries loglevel from info to debug.
 
