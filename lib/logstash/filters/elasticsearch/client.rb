@@ -21,7 +21,8 @@ module LogStash
         end
 
         hosts.map! {|h| { host: h, scheme: 'https' } } if ssl
-        transport_options[:ssl] = { ca_file: options[:ca_file] } if ssl && options[:ca_file]
+        # set ca_file even if ssl isn't on, since the host can be an https url
+        transport_options[:ssl] = { ca_file: options[:ca_file] } if options[:ca_file]
 
         @logger.info("New ElasticSearch filter", :hosts => hosts)
         @client = ::Elasticsearch::Client.new(hosts: hosts, transport_options: transport_options)
