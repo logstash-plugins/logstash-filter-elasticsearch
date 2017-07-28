@@ -1,5 +1,6 @@
 ## 3.1.5
  - Docs: Fix broken link to Logstash docs.
+ - Support ca_file setting when using https uri in hosts parameter
 
 ## 3.1.4
  - Docs: Bump patch level for doc build.
