@@ -1,3 +1,6 @@
+## 3.1.6
+  - Fix some documentation issues
+
 ## 3.1.5
  - Docs: Fix broken link to Logstash docs.
  - Support ca_file setting when using https uri in hosts parameter
