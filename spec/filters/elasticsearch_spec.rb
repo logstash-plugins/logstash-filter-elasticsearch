@@ -122,6 +122,41 @@ describe LogStash::Filters::Elasticsearch do
 
     end
 
+    context "if query result errored but no exception is thrown" do
+      let(:response) do
+        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_error.json")))
+      end
+
+      before(:each) do
+        allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
+        allow(client).to receive(:search).and_return(response)
+        plugin.register
+      end
+
+      it "tag the event as something happened, but still deliver it" do
+        expect(plugin.logger).to receive(:warn)
+        plugin.filter(event)
+        expect(event.to_hash["tags"]).to include("_elasticsearch_lookup_failure")
+      end
+    end
+
+
+    context "if query is on nested field" do
+      let(:config) do
+        {
+            "hosts" => ["localhost:9200"],
+            "query" => "response: 404",
+            "fields" => [ ["[geoip][ip]", "ip_address"] ]
+        }
+      end
+
+      it "should enhance the current event with new data" do
+        plugin.filter(event)
+        expect(event.get("ip_address")).to eq("66.249.73.185")
+      end
+
+    end
+
   end
 
 end

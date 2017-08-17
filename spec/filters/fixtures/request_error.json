@@ -1,0 +1,25 @@
+{
+	"took": 16,
+	"timed_out": false,
+	"_shards": {
+		"total": 155,
+		"successful": 100,
+		"failed": 55,
+		"failures": [
+			{
+				"shard": 0,
+				"index": "logstash-2014.08.26",
+				"node": "YI1MT0H-Q469pFgAVTXI2g",
+				"reason": {
+					"type": "search_parse_exception",
+					"reason": "No mapping found for [@timestamp] in order to sort on"
+				}
+			}
+		]
+	},
+	"hits": {
+		"total": 0,
+		"max_score": null,
+		"hits": []
+	}
+}

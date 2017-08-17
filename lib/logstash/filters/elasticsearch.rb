@@ -147,7 +147,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   def filter(event)
     begin
-
       params = {:index => @index }
 
       if @query_dsl
@@ -163,11 +162,20 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       @logger.debug("Querying elasticsearch for lookup", :params => params)
 
       results = @client.search(params)
+      raise "Elasticsearch query error: #{results["_shards"]["failures"]}" if results["_shards"].include? "failures"
+
       @fields.each do |old_key, new_key|
         if !results['hits']['hits'].empty?
+          if old_key.include?('][')
+            old_keys = old_key[1...-1].split('][')
+          else
+            old_keys = [old_key]
+          end
           set = []
           results["hits"]["hits"].to_a.each do |doc|
-            set << doc["_source"][old_key]
+            old_val = doc["_source"]
+            old_keys.each { |key| old_val = old_val[key] }
+            set << old_val
           end
           event.set(new_key, set.count > 1 ? set : set.first)
         end
