@@ -141,6 +141,30 @@ describe LogStash::Filters::Elasticsearch do
 
     end
 
+    context "testing a simple index substitution" do
+      let(:event) {
+        LogStash::Event.new(
+            {
+                "subst_field" => "subst_value"
+            }
+        )
+      }
+      let(:config) do
+        {
+            "index" => "foo_%{subst_field}*",
+            "hosts" => ["localhost:9200"],
+            "query" => "response: 404",
+            "fields" => [["response", "code"]]
+        }
+      end
+
+      it "should receive substituted index name" do
+        expect(client).to receive(:search).with({:q => "response: 404", :size => 1, :index => "foo_subst_value*", :sort => "@timestamp:desc"})
+        plugin.filter(event)
+      end
+
+    end
+
   end
 
 end

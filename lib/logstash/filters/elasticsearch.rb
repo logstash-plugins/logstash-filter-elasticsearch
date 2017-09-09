@@ -88,7 +88,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # List of elasticsearch hosts to use for querying.
   config :hosts, :validate => :array,  :default => [ "localhost:9200" ]
   
-  # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices
+  # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices.
+  # Field substitution (e.g. `index-name-%{date_field}`) is available
   config :index, :validate => :string, :default => ""
 
   # Elasticsearch query string. Read the Elasticsearch query string documentation.
