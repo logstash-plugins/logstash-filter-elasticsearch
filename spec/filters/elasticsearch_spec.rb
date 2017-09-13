@@ -38,6 +38,25 @@ describe LogStash::Filters::Elasticsearch do
       plugin.register
     end
 
+    after(:each) do
+      Thread.current[:filter_elasticsearch_client] = nil
+    end
+
+    # Since the Elasticsearch Ruby client is not thread safe
+    # and under high load we can get error with the connection pool
+    # we have decided to create a new instance per worker thread which
+    # will be lazy created on the first call to `#filter`
+    #
+    # I am adding a simple test case for future changes
+    it "uses a different connection object per thread wait" do
+      expect(plugin.clients_pool.size).to eq(0)
+
+      Thread.new { plugin.filter(event) }.join
+      Thread.new { plugin.filter(event) }.join
+
+      expect(plugin.clients_pool.size).to eq(2)
+    end
+
     it "should enhance the current event with new data" do
       plugin.filter(event)
       expect(event.get("code")).to eq(404)
