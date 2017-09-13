@@ -1,3 +1,6 @@
+## 3.1.8
+  - Fix a thread safety issue when using this filter with multiple workers on heavy load, we now create an elasticsearch client for every LogStash worker. #76
+
 ## 3.1.6
   - Fix some documentation issues
 
