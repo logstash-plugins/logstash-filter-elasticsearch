@@ -191,6 +191,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def get_client
-    @clients_pool.computeIfAbsent(Thread.current, ->(k) { new_client })
+    @clients_pool.computeIfAbsent(Thread.current, lambda { |x| new_client })
   end
 end #class LogStash::Filters::Elasticsearch
