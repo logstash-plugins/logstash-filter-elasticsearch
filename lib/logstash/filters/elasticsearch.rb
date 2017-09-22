@@ -102,7 +102,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Comma-delimited list of `<field>:<direction>` pairs that define the sort order
   config :sort, :validate => :string, :default => "@timestamp:desc"
 
-  # Array of fields to copy from old event (found via elasticsearch) into new event
+  # Array of fields to copy from old event (found via elasticsearch) into new event.
+  # When "_source" field is used, whole document will be copied into specified field.
   config :fields, :validate => :array, :default => {}
 
   # Basic Auth - username
@@ -164,7 +165,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         if !results['hits']['hits'].empty?
           set = []
           results["hits"]["hits"].to_a.each do |doc|
-            set << doc["_source"][old_key]
+            set << (old_key == "_source" ? doc["_source"] : doc["_source"][old_key])
           end
           event.set(new_key, set.count > 1 ? set : set.first)
         end

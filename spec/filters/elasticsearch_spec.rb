@@ -140,7 +140,19 @@ describe LogStash::Filters::Elasticsearch do
       end
 
     end
+    context "when asking to copy _source field" do
+      let(:config) do
+        {
+          "hosts" => ["localhost:9200"],
+          "query" => "response: 404",
+          "fields" => [ ["_source", "source_event"] ],
+        }
+      end
 
+      it "copies whole document into specified field" do
+        plugin.filter(event)
+        expect(event.get("source_event")).to eq(response["hits"]["hits"][0]["_source"])
+      end
+    end
   end
-
 end
