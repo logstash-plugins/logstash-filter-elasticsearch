@@ -1,3 +1,6 @@
+## 3.2.0
+  - `index` setting now supports field formatting, such as `index => "%{myindex}"` (Boris Gorbylev)
+
 ## 3.1.8
   - Fix a thread safety issue when using this filter with multiple workers on heavy load, we now create an elasticsearch client for every LogStash worker. #76
 
