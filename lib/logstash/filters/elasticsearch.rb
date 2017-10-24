@@ -3,6 +3,7 @@ require "logstash/filters/base"
 require "logstash/namespace"
 require_relative "elasticsearch/client"
 require "logstash/json"
+java_import "java.util.concurrent.ConcurrentHashMap"
 
 # .Compatibility Note
 # [NOTE]
@@ -87,7 +88,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # List of elasticsearch hosts to use for querying.
   config :hosts, :validate => :array,  :default => [ "localhost:9200" ]
   
-  # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices
+  # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices.
+  # Field substitution (e.g. `index-name-%{date_field}`) is available
   config :index, :validate => :string, :default => ""
 
   # Elasticsearch query string. Read the Elasticsearch query string documentation.
@@ -128,14 +130,10 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # total_hits (full data set)
     config :total_hits, :validate => :boolean, :default => false
 
+  attr_reader :clients_pool
+
   def register
-    options = {
-      :ssl => @ssl,
-      :hosts => @hosts,
-      :ca_file => @ca_file,
-      :logger => @logger
-    }
-    @client = LogStash::Filters::ElasticsearchClient.new(@user, @password, options)
+    @clients_pool = java.util.concurrent.ConcurrentHashMap.new
 
     #Load query if it exists
     if @query_template
@@ -151,7 +149,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   def filter(event)
     begin
 
-      params = {:index => @index }
+      params = {:index => event.sprintf(@index) }
 
       if @query_dsl
         query = LogStash::Json.load(event.sprintf(@query_dsl))
@@ -164,6 +162,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       end
 
       @logger.debug("Querying elasticsearch for lookup", :params => params)
+
       results = @client.search(params)
 
       if (@total_hits == true)
@@ -198,4 +197,22 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     end
     filter_matched(event)
   end # def filter
+
+  private
+  def client_options
+    {
+      :ssl => @ssl,
+      :hosts => @hosts,
+      :ca_file => @ca_file,
+      :logger => @logger
+    }
+  end
+
+  def new_client
+    LogStash::Filters::ElasticsearchClient.new(@user, @password, client_options)
+  end
+
+  def get_client
+    @clients_pool.computeIfAbsent(Thread.current, lambda { |x| new_client })
+  end
 end #class LogStash::Filters::Elasticsearch

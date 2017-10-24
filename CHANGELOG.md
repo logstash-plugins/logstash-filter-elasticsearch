@@ -1,5 +1,20 @@
-## 3.1.4
+## 3.2.1
   - added total_hits (boolean) flag to return the complete "hits" array including the _index, _type, _id, _score and _source for the matching query
+## 3.2.0
+  - `index` setting now supports field formatting, such as `index => "%{myindex}"` (Boris Gorbylev)
+
+## 3.1.8
+  - Fix a thread safety issue when using this filter with multiple workers on heavy load, we now create an elasticsearch client for every LogStash worker. #76
+
+## 3.1.6
+  - Fix some documentation issues
+
+## 3.1.5
+ - Docs: Fix broken link to Logstash docs.
+ - Support ca_file setting when using https uri in hosts parameter
+
+## 3.1.4
+ - Docs: Bump patch level for doc build.
 
 ## 3.1.3
   - Change the queries loglevel from info to debug.
