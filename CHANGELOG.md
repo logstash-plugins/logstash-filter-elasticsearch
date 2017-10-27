@@ -1,3 +1,5 @@
+## 3.2.1
+  - added total_hits (boolean) flag to return the complete "hits" array including the _index, _type, _id, _score and _source for the matching query
 ## 3.2.0
   - `index` setting now supports field formatting, such as `index => "%{myindex}"` (Boris Gorbylev)
 
