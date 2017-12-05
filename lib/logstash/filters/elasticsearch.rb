@@ -12,9 +12,9 @@ java_import "java.util.concurrent.ConcurrentHashMap"
 # called `http.content_type.required`. If this option is set to `true`, and you
 # are using Logstash 2.4 through 5.2, you need to update the Elasticsearch filter
 # plugin to version 3.1.1 or higher.
-# 
+#
 # ================================================================================
-# 
+#
 # Search Elasticsearch for a previous log event and copy some fields from it
 # into the current event.  Below are two complete examples of how this filter might
 # be used.
@@ -87,7 +87,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # List of elasticsearch hosts to use for querying.
   config :hosts, :validate => :array,  :default => [ "localhost:9200" ]
-  
+
   # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices.
   # Field substitution (e.g. `index-name-%{date_field}`) is available
   config :index, :validate => :string, :default => ""
@@ -105,6 +105,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # Array of fields to copy from old event (found via elasticsearch) into new event
   config :fields, :validate => :array, :default => {}
+
+  # Array of document metadata fields copy from old event (found via elasticsearch) into new event
+  config :docinfo_fields, :validate => :array, :default => {}
 
   # Basic Auth - username
   config :user, :validate => :string
@@ -166,6 +169,15 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
           set = []
           results["hits"]["hits"].to_a.each do |doc|
             set << doc["_source"][old_key]
+          end
+          event.set(new_key, set.count > 1 ? set : set.first)
+        end
+      end
+      @docinfo_fields.each do |old_key, new_key|
+        if !results['hits']['hits'].empty?
+          set = []
+          results["hits"]["hits"].to_a.each do |doc|
+            set << doc[old_key]
           end
           event.set(new_key, set.count > 1 ? set : set.first)
         end
