@@ -103,11 +103,11 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Comma-delimited list of `<field>:<direction>` pairs that define the sort order
   config :sort, :validate => :string, :default => "@timestamp:desc"
 
-  # Hash of fields to copy from old event (found via elasticsearch) into new event
-  config :fields, :validate => :hash, :default => {}
+  # Array of fields to copy from old event (found via elasticsearch) into new event
+  config :fields, :validate => :array, :default => {}
 
-  # Hash of document metadata fields copy from old event (found via elasticsearch) into new event
-  config :docinfo_fields, :validate => :hash, :default => {}
+  # Array of document metadata fields copy from old event (found via elasticsearch) into new event
+  config :docinfo_fields, :validate => :array, :default => {}
 
   # Basic Auth - username
   config :user, :validate => :string
