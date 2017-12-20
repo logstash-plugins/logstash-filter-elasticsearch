@@ -105,7 +105,9 @@ This plugin supports the following configuration options plus the <<plugins-{typ
 [cols="<,<,<",options="header",]
 |=======================================================================
 |Setting |Input type|Required
+| <<plugins-{type}s-{plugin}-aggregation_fields>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-ca_file>> |a valid filesystem path|No
+| <<plugins-{type}s-{plugin}-docinfo_fields>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-enable_sort>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-fields>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-hosts>> |<<array,array>>|No
@@ -125,6 +127,24 @@ filter plugins.
 
 &nbsp;
 
+[id="plugins-{type}s-{plugin}-aggregation_fields"]
+===== `aggregation_fields` 
+
+  * Value type is <<hash,hash>>
+  * Default value is `{}`
+
+Hash of aggregation names to copy from elasticsearch response into Logstash event fields
+
+Example:
+[source,ruby]
+    filter {
+      elasticsearch {
+        aggregation_fields => {
+          "my_agg_name" => "my_ls_field"
+        }
+      }
+    }
+
 [id="plugins-{type}s-{plugin}-ca_file"]
 ===== `ca_file` 
 
@@ -132,6 +152,25 @@ filter plugins.
   * There is no default value for this setting.
 
 SSL Certificate Authority file
+
+[id="plugins-{type}s-{plugin}-docinfo_fields"]
+===== `docinfo_fields` 
+
+  * Value type is <<hash,hash>>
+  * Default value is `{}`
+
+Hash of docinfo fields to copy from old event (found via elasticsearch) into new event
+
+Example:
+[source,ruby]
+    filter {
+      elasticsearch {
+        docinfo_fields => {
+          "_id" => "document_id"
+          "_index" => "document_index"
+        }
+      }
+    }
 
 [id="plugins-{type}s-{plugin}-enable_sort"]
 ===== `enable_sort` 

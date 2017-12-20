@@ -106,6 +106,12 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Array of fields to copy from old event (found via elasticsearch) into new event
   config :fields, :validate => :array, :default => {}
 
+  # Hash of docinfo fields to copy from old event (found via elasticsearch) into new event
+  config :docinfo_fields, :validate => :hash, :default => {}
+
+  # Hash of aggregation names to copy from elasticsearch response into Logstash event fields
+  config :aggregation_fields, :validate => :hash, :default => {}
+
   # Basic Auth - username
   config :user, :validate => :string
 
@@ -162,15 +168,31 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       results = get_client.search(params)
       raise "Elasticsearch query error: #{results["_shards"]["failures"]}" if results["_shards"].include? "failures"
 
-      @fields.each do |old_key, new_key|
-        if !results['hits']['hits'].empty?
+      resultsHits = results["hits"]["hits"]
+      if !resultsHits.nil? && !resultsHits.empty?
+        @fields.each do |old_key, new_key|
           old_key_path = extract_path(old_key)
-          set = results["hits"]["hits"].map do |doc|
+          set = resultsHits.map do |doc|
             extract_value(doc["_source"], old_key_path)
           end
           event.set(new_key, set.count > 1 ? set : set.first)
         end
+        @docinfo_fields.each do |old_key, new_key|
+          old_key_path = extract_path(old_key)
+          set = resultsHits.map do |doc|
+            extract_value(doc, old_key_path)
+          end
+          event.set(new_key, set.count > 1 ? set : set.first)
+        end
       end
+
+      resultsAggs = results["aggregations"]
+      if !resultsAggs.nil? && !resultsAggs.empty?
+        @aggregation_fields.each do |agg_name, ls_field|
+          event.set(ls_field, resultsAggs[agg_name])
+        end
+      end
+
     rescue => e
       @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query, :event => event, :error => e)
       @tag_on_failure.each{|tag| event.tag(tag)}
