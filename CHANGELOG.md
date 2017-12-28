@@ -1,3 +1,9 @@
+## 3.3.0
+  - Enhancement : if elasticsearch response contains any shard failure, then `tag_on_failure` tags are added to Logstash event
+  - Enhancement : add support for nested fields
+  - Enhancement : add 'docinfo_fields' option
+  - Enhancement : add 'aggregation_fields' option
+
 ## 3.2.1
   - Update gemspec summary
 
