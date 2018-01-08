@@ -145,7 +145,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   def filter(event)
     begin
-
       params = {:index => event.sprintf(@index) }
 
       if @query_dsl
@@ -161,11 +160,13 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       @logger.debug("Querying elasticsearch for lookup", :params => params)
 
       results = get_client.search(params)
+      raise "Elasticsearch query error: #{results["_shards"]["failures"]}" if results["_shards"].include? "failures"
+
       @fields.each do |old_key, new_key|
         if !results['hits']['hits'].empty?
-          set = []
-          results["hits"]["hits"].to_a.each do |doc|
-            set << doc["_source"][old_key]
+          old_key_path = extract_path(old_key)
+          set = results["hits"]["hits"].map do |doc|
+            extract_value(doc["_source"], old_key_path)
           end
           event.set(new_key, set.count > 1 ? set : set.first)
         end
@@ -193,5 +194,23 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   def get_client
     @clients_pool.computeIfAbsent(Thread.current, lambda { |x| new_client })
+  end
+
+  # get an array of path elements from a path reference
+  def extract_path(path_reference)
+    return [path_reference] unless path_reference.start_with?('[') && path_reference.end_with?(']')
+
+    path_reference[1...-1].split('][')
+  end
+
+  # given a Hash and an array of path fragments, returns the value at the path
+  # @param source [Hash{String=>Object}]
+  # @param path [Array{String}]
+  # @return [Object]
+  def extract_value(source, path)
+    path.reduce(source) do |memo, old_key_fragment|
+      break unless memo.include?(old_key_fragment)
+      memo[old_key_fragment]
+    end
   end
 end #class LogStash::Filters::Elasticsearch
