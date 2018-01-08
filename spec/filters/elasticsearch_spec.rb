@@ -20,7 +20,9 @@ describe LogStash::Filters::Elasticsearch do
       {
         "hosts" => ["localhost:9200"],
         "query" => "response: 404",
-        "fields" => [ ["response", "code"] ],
+        "fields" => { "response" => "code" },
+        "docinfo_fields" => { "_index" => "es_index" },
+        "aggregation_fields" => { "bytes_avg" => "bytes_avg_ls_field" }
       }
     end
     let(:plugin) { described_class.new(config) }
@@ -60,6 +62,8 @@ describe LogStash::Filters::Elasticsearch do
     it "should enhance the current event with new data" do
       plugin.filter(event)
       expect(event.get("code")).to eq(404)
+      expect(event.get("es_index")).to eq("logstash-2014.08.26")
+      expect(event.get("bytes_avg_ls_field")["value"]).to eq(294)
     end
 
     it "should receive all necessary params to perform the search" do
@@ -74,7 +78,7 @@ describe LogStash::Filters::Elasticsearch do
           "index" => "foo*",
           "hosts" => ["localhost:9200"],
           "query" => "response: 404",
-          "fields" => [ ["response", "code"] ],
+          "fields" => { "response" => "code" }
         }
       end
 
@@ -90,7 +94,7 @@ describe LogStash::Filters::Elasticsearch do
         {
           "hosts" => ["localhost:9200"],
           "query" => "response: 404",
-          "fields" => [ ["response", "code"] ],
+          "fields" => { "response" => "code" },
           "result_size" => 10
         }
       end
@@ -125,7 +129,7 @@ describe LogStash::Filters::Elasticsearch do
         {
             "hosts" => ["localhost:9200"],
             "query_template" => File.join(File.dirname(__FILE__), "fixtures", "query_template.json"),
-            "fields" => [ ["response", "code"] ],
+            "fields" => { "response" => "code" },
             "result_size" => 1
         }
       end
@@ -154,7 +158,7 @@ describe LogStash::Filters::Elasticsearch do
             "index" => "foo_%{subst_field}*",
             "hosts" => ["localhost:9200"],
             "query" => "response: 404",
-            "fields" => [["response", "code"]]
+            "fields" => { "response" => "code" }
         }
       end
 

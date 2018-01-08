@@ -5,82 +5,6 @@ require_relative "elasticsearch/client"
 require "logstash/json"
 java_import "java.util.concurrent.ConcurrentHashMap"
 
-# .Compatibility Note
-# [NOTE]
-# ================================================================================
-# Starting with Elasticsearch 5.3, there's an {ref}modules-http.html[HTTP setting]
-# called `http.content_type.required`. If this option is set to `true`, and you
-# are using Logstash 2.4 through 5.2, you need to update the Elasticsearch filter
-# plugin to version 3.1.1 or higher.
-# 
-# ================================================================================
-# 
-# Search Elasticsearch for a previous log event and copy some fields from it
-# into the current event.  Below are two complete examples of how this filter might
-# be used.
-#
-# The first example uses the legacy 'query' parameter where the user is limited to an Elasticsearch query_string.
-# Whenever logstash receives an "end" event, it uses this elasticsearch
-# filter to find the matching "start" event based on some operation identifier.
-# Then it copies the `@timestamp` field from the "start" event into a new field on
-# the "end" event.  Finally, using a combination of the "date" filter and the
-# "ruby" filter, we calculate the time duration in hours between the two events.
-# [source,ruby]
-# --------------------------------------------------
-#       if [type] == "end" {
-#          elasticsearch {
-#             hosts => ["es-server"]
-#             query => "type:start AND operation:%{[opid]}"
-#             fields => { "@timestamp" => "started" }
-#          }
-#
-#          date {
-#             match => ["[started]", "ISO8601"]
-#             target => "[started]"
-#          }
-#
-#          ruby {
-#             code => "event.set('duration_hrs', (event.get('@timestamp') - event.get('started')) / 3600) rescue nil"
-#          }
-#       }
-#
-#  The example below reproduces the above example but utilises the query_template.  This query_template represents a full
-#  Elasticsearch query DSL and supports the standard Logstash field substitution syntax.  The example below issues
-#  the same query as the first example but uses the template shown.
-#
-#   if [type] == "end" {
-#          elasticsearch {
-#             hosts => ["es-server"]
-#             query_template => "template.json"
-#          }
-#
-#          date {
-#             match => ["started", "ISO8601"]
-#             target => "started"
-#          }
-#
-#          ruby {
-#             code => "event.set('duration_hrs', (event.get('@timestamp') - event.get('started')) / 3600) rescue nil"
-#          }
-#   }
-#
-#
-#
-#   template.json:
-#
-#  {
-#     "query": {
-#       "query_string": {
-#        "query": "type:start AND operation:%{[opid]}"
-#       }
-#     },
-#    "_source": ["@timestamp", "started"]
-#  }
-#
-# As illustrated above, through the use of 'opid', fields from the Logstash events can be referenced within the template.
-# The template will be populated per event prior to being used to query Elasticsearch.
-#
-# --------------------------------------------------
 
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config_name "elasticsearch"
@@ -105,6 +29,12 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # Array of fields to copy from old event (found via elasticsearch) into new event
   config :fields, :validate => :array, :default => {}
+
+  # Hash of docinfo fields to copy from old event (found via elasticsearch) into new event
+  config :docinfo_fields, :validate => :hash, :default => {}
+
+  # Hash of aggregation names to copy from elasticsearch response into Logstash event fields
+  config :aggregation_fields, :validate => :hash, :default => {}
 
   # Basic Auth - username
   config :user, :validate => :string
@@ -162,15 +92,31 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       results = get_client.search(params)
       raise "Elasticsearch query error: #{results["_shards"]["failures"]}" if results["_shards"].include? "failures"
 
-      @fields.each do |old_key, new_key|
-        if !results['hits']['hits'].empty?
+      resultsHits = results["hits"]["hits"]
+      if !resultsHits.nil? && !resultsHits.empty?
+        @fields.each do |old_key, new_key|
           old_key_path = extract_path(old_key)
-          set = results["hits"]["hits"].map do |doc|
+          set = resultsHits.map do |doc|
             extract_value(doc["_source"], old_key_path)
           end
           event.set(new_key, set.count > 1 ? set : set.first)
         end
+        @docinfo_fields.each do |old_key, new_key|
+          old_key_path = extract_path(old_key)
+          set = resultsHits.map do |doc|
+            extract_value(doc, old_key_path)
+          end
+          event.set(new_key, set.count > 1 ? set : set.first)
+        end
       end
+
+      resultsAggs = results["aggregations"]
+      if !resultsAggs.nil? && !resultsAggs.empty?
+        @aggregation_fields.each do |agg_name, ls_field|
+          event.set(ls_field, resultsAggs[agg_name])
+        end
+      end
+
     rescue => e
       @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query, :event => event, :error => e)
       @tag_on_failure.each{|tag| event.tag(tag)}
