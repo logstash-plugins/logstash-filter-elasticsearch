@@ -67,6 +67,7 @@ the "end" event.  Finally, using a combination of the "date" filter and the
          elasticsearch {
             hosts => ["es-server"]
             query_template => "template.json"
+            fields => { "@timestamp" => "started" }
          }
 
          date {
@@ -89,7 +90,7 @@ the "end" event.  Finally, using a combination of the "date" filter and the
        "query": "type:start AND operation:%{[opid]}"
       }
     },
-   "_source": ["@timestamp", "started"]
+   "_source": ["@timestamp"]
  }
 
 As illustrated above, through the use of 'opid', fields from the Logstash events can be referenced within the template.
