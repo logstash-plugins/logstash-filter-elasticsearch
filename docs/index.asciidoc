@@ -58,11 +58,12 @@ the "end" event.  Finally, using a combination of the "date" filter and the
             code => "event.set('duration_hrs', (event.get('@timestamp') - event.get('started')) / 3600)"
          }
       }
-
- The example below reproduces the above example but utilises the query_template.  This query_template represents a full
- Elasticsearch query DSL and supports the standard Logstash field substitution syntax.  The example below issues
- the same query as the first example but uses the template shown.
-
+--------------------------------------------------
+The example below reproduces the above example but utilises the query_template.  This query_template represents a full
+Elasticsearch query DSL and supports the standard Logstash field substitution syntax.  The example below issues
+the same query as the first example but uses the template shown.
+[source,ruby]
+--------------------------------------------------
   if [type] == "end" {
          elasticsearch {
             hosts => ["es-server"]
@@ -92,11 +93,9 @@ the "end" event.  Finally, using a combination of the "date" filter and the
     },
    "_source": ["@timestamp"]
  }
-
+--------------------------------------------------
 As illustrated above, through the use of 'opid', fields from the Logstash events can be referenced within the template.
 The template will be populated per event prior to being used to query Elasticsearch.
-
---------------------------------------------------
 
 [id="plugins-{type}s-{plugin}-options"]
 ==== Elasticsearch Filter Configuration Options
