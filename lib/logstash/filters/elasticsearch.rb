@@ -120,8 +120,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     rescue => e
       @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query, :event => event, :error => e)
       @tag_on_failure.each{|tag| event.tag(tag)}
+    else 
+      filter_matched(event) if (!resultsHits.nil? && resultsHits["hits"]["total"] > 0)
     end
-    filter_matched(event) if !resultsHits.nil? && !resultsHits.empty?
   end # def filter
 
   private
