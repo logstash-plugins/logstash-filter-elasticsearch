@@ -102,8 +102,6 @@ template.json:
 As illustrated above, through the use of 'opid', fields from the Logstash events can be referenced within the template.
 The template will be populated per event prior to being used to query Elasticsearch.
 
---------------------------------------------------
-
 [id="plugins-{type}s-{plugin}-options"]
 ==== Elasticsearch Filter Configuration Options
 
