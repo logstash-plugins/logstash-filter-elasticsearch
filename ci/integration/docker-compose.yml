@@ -1,0 +1,44 @@
+version: '3'
+
+# start testbed:  docker-compose up --force-recreate
+# manual:  docker-compose run logstash bash
+
+services:
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:$ELASTIC_STACK_VERSION
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      discovery.type: "single-node"
+    networks:
+      - el
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash-oss:$ELASTIC_STACK_VERSION
+    volumes:
+      - ./logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./pipelines.yml:/usr/share/logstash/config/pipelines.yml
+      - ./ls.config:/usr/share/logstash/ls.config
+      - ./this.gem:/usr/share/logstash/this.gem
+      - ./docker-compose-command.sh:/usr/share/logstash/docker-compose-command.sh
+    command: /usr/share/logstash/docker-compose-command.sh ${LS_ARGS}
+    ports:
+      - "9600:9600"
+      - ${PORT1}:${PORT1}
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+      JARS_SKIP: "true"
+      PORT1: ${PORT1}
+      PORT2: ${PORT2}
+    networks:
+      - el
+    depends_on:
+      - elasticsearch
+
+
+networks:
+  el:
+    driver: bridge
