@@ -61,8 +61,9 @@ if [type] == "end" {
 }
 --------------------------------------------------
 
-The example below reproduces the above example but utilises the query_template.  This query_template represents a full
-Elasticsearch query DSL and supports the standard Logstash field substitution syntax.  The example below issues
+The example below reproduces the above example but utilises the query_template.
+This query_template represents a full Elasticsearch query DSL and supports the
+standard Logstash field substitution syntax.  The example below issues
 the same query as the first example but uses the template shown.
 
 [source,ruby]
@@ -99,7 +100,8 @@ template.json:
  }
 --------------------------------------------------
 
-As illustrated above, through the use of 'opid', fields from the Logstash events can be referenced within the template.
+As illustrated above, through the use of 'opid', fields from the Logstash
+events can be referenced within the template.
 The template will be populated per event prior to being used to query Elasticsearch.
 
 Note that when using `query_template, the Logstash attributes `result_size`
