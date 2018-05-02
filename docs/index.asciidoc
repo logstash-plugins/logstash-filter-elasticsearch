@@ -40,24 +40,25 @@ filter to find the matching "start" event based on some operation identifier.
 Then it copies the `@timestamp` field from the "start" event into a new field on
 the "end" event.  Finally, using a combination of the "date" filter and the
 "ruby" filter, we calculate the time duration in hours between the two events.
+
 [source,ruby]
 --------------------------------------------------
-      if [type] == "end" {
-         elasticsearch {
-            hosts => ["es-server"]
-            query => "type:start AND operation:%{[opid]}"
-            fields => { "@timestamp" => "started" }
-         }
+if [type] == "end" {
+   elasticsearch {
+      hosts => ["es-server"]
+      query => "type:start AND operation:%{[opid]}"
+      fields => { "@timestamp" => "started" }
+   }
 
-         date {
-            match => ["[started]", "ISO8601"]
-            target => "[started]"
-         }
+   date {
+      match => ["[started]", "ISO8601"]
+      target => "[started]"
+   }
 
-         ruby {
-            code => "event.set('duration_hrs', (event.get('@timestamp') - event.get('started')) / 3600)"
-         }
-      }
+   ruby {
+      code => "event.set('duration_hrs', (event.get('@timestamp') - event.get('started')) / 3600)"
+   }
+}
 --------------------------------------------------
 
 The example below reproduces the above example but utilises the query_template.  This query_template represents a full
@@ -66,27 +67,28 @@ the same query as the first example but uses the template shown.
 
 [source,ruby]
 --------------------------------------------------
-  if [type] == "end" {
-         elasticsearch {
-            hosts => ["es-server"]
-            query_template => "template.json"
-            fields => { "@timestamp" => "started" }
-         }
+if [type] == "end" {
+      elasticsearch {
+         hosts => ["es-server"]
+         query_template => "template.json"
+         fields => { "@timestamp" => "started" }
+      }
 
-         date {
-            match => ["[started]", "ISO8601"]
-            target => "[started]"
-         }
+      date {
+         match => ["[started]", "ISO8601"]
+         target => "[started]"
+      }
 
-         ruby {
-            code => "event.set('duration_hrs', (event.get('@timestamp') - event.get('started')) / 3600)"
-         }
-  }
+      ruby {
+         code => "event.set('duration_hrs', (event.get('@timestamp') - event.get('started')) / 3600)"
+      }
+}
+--------------------------------------------------
 
+template.json:
 
-
-  template.json:
-
+[source,json]
+--------------------------------------------------
  {
     "query": {
       "query_string": {
@@ -99,8 +101,6 @@ the same query as the first example but uses the template shown.
 
 As illustrated above, through the use of 'opid', fields from the Logstash events can be referenced within the template.
 The template will be populated per event prior to being used to query Elasticsearch.
-
---------------------------------------------------
 
 [id="plugins-{type}s-{plugin}-options"]
 ==== Elasticsearch Filter Configuration Options
