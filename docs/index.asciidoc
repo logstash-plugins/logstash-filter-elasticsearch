@@ -104,7 +104,7 @@ As illustrated above, through the use of 'opid', fields from the Logstash
 events can be referenced within the template.
 The template will be populated per event prior to being used to query Elasticsearch.
 
-Note that when using `query_template, the Logstash attributes `result_size`
+Note that when you use `query_template`, the Logstash attributes `result_size`
 and `sort` will be ignored. They should be specified directly in the JSON
 template. Example:
 
