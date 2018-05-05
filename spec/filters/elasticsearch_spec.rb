@@ -109,6 +109,7 @@ describe LogStash::Filters::Elasticsearch do
       end
     end
 
+	
     context "if something wrong happen during connection" do
 
       before(:each) do
@@ -124,6 +125,47 @@ describe LogStash::Filters::Elasticsearch do
       end
     end
 
+	# Tagging test for positive results
+	context "Tagging should occur if query returns results" do
+      let(:config) do
+        {
+          "index" => "foo*",
+          "hosts" => ["localhost:9200"],
+          "query" => "response: 404",
+          "add_tag" => ["tagged"]
+        }
+      end
+	  
+	  let(:response) do
+        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_x_10.json")))
+      end
+
+      it "should tag the current event if results returned" do
+        plugin.filter(event)
+        expect(event.to_hash["tags"]).to include("tagged")
+      end
+    end
+
+	# Tagging test for negative results
+	context "Tagging should not occur if query has no results" do
+      let(:config) do
+        {
+          "index" => "foo*",
+          "hosts" => ["localhost:9200"],
+          "query" => "response: 404",
+          "add_tag" => ["tagged"]
+        }
+      end
+	  
+	  let(:response) do
+        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_error.json")))
+      end
+
+      it "should not tag the current event" do
+        plugin.filter(event)
+        expect(event.to_hash["tags"]).to_not include("tagged")
+      end
+    end
     context "testing a simple query template" do
       let(:config) do
         {
