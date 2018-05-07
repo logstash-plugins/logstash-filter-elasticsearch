@@ -145,6 +145,30 @@ describe LogStash::Filters::Elasticsearch do
       end
     end
 
+    context "an aggregation search with size 0 that matches" do
+      let(:config) do
+        {
+          "index" => "foo*",
+          "hosts" => ["localhost:9200"],
+          "query" => "response: 404",
+          "add_tag" => ["tagged"],
+          "result_size" => 0,
+          "aggregation_fields" => { "bytes_avg" => "bytes_avg_ls_field" }
+        }
+      end
+
+      let(:response) do
+        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_size0_agg.json")))
+      end
+
+      it "should tag the current event" do
+        plugin.filter(event)
+        puts event.to_hash
+        expect(event.get("tags")).to include("tagged")
+        expect(event.get("bytes_avg_ls_field")["value"]).to eq(294)
+      end
+    end
+
     # Tagging test for negative results
     context "Tagging should not occur if query has no results" do
       let(:config) do
