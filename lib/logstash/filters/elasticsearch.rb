@@ -74,6 +74,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end # def register
 
   def filter(event)
+    matched = false
     begin
       params = {:index => event.sprintf(@index) }
 
@@ -94,6 +95,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
       resultsHits = results["hits"]["hits"]
       if !resultsHits.nil? && !resultsHits.empty?
+        matched = true
         @fields.each do |old_key, new_key|
           old_key_path = extract_path(old_key)
           set = resultsHits.map do |doc|
@@ -112,6 +114,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
       resultsAggs = results["aggregations"]
       if !resultsAggs.nil? && !resultsAggs.empty?
+        matched = true
         @aggregation_fields.each do |agg_name, ls_field|
           event.set(ls_field, resultsAggs[agg_name])
         end
@@ -121,7 +124,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query, :event => event, :error => e)
       @tag_on_failure.each{|tag| event.tag(tag)}
     else
-      filter_matched(event) if (!resultsHits.nil? && Integer(results["hits"]["total"]) > 0)
+      filter_matched(event) if matched
     end
   end # def filter
 
