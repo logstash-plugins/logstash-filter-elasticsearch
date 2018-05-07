@@ -163,7 +163,6 @@ describe LogStash::Filters::Elasticsearch do
 
       it "should tag the current event" do
         plugin.filter(event)
-        puts event.to_hash
         expect(event.get("tags")).to include("tagged")
         expect(event.get("bytes_avg_ls_field")["value"]).to eq(294)
       end
