@@ -109,7 +109,6 @@ describe LogStash::Filters::Elasticsearch do
       end
     end
 
-	
     context "if something wrong happen during connection" do
 
       before(:each) do
@@ -125,8 +124,8 @@ describe LogStash::Filters::Elasticsearch do
       end
     end
 
-	# Tagging test for positive results
-	context "Tagging should occur if query returns results" do
+    # Tagging test for positive results
+    context "Tagging should occur if query returns results" do
       let(:config) do
         {
           "index" => "foo*",
@@ -135,8 +134,8 @@ describe LogStash::Filters::Elasticsearch do
           "add_tag" => ["tagged"]
         }
       end
-	  
-	  let(:response) do
+
+      let(:response) do
         LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_x_10.json")))
       end
 
@@ -146,8 +145,8 @@ describe LogStash::Filters::Elasticsearch do
       end
     end
 
-	# Tagging test for negative results
-	context "Tagging should not occur if query has no results" do
+    # Tagging test for negative results
+    context "Tagging should not occur if query has no results" do
       let(:config) do
         {
           "index" => "foo*",
@@ -156,8 +155,8 @@ describe LogStash::Filters::Elasticsearch do
           "add_tag" => ["tagged"]
         }
       end
-	  
-	  let(:response) do
+
+      let(:response) do
         LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_error.json")))
       end
 
@@ -169,10 +168,10 @@ describe LogStash::Filters::Elasticsearch do
     context "testing a simple query template" do
       let(:config) do
         {
-            "hosts" => ["localhost:9200"],
-            "query_template" => File.join(File.dirname(__FILE__), "fixtures", "query_template.json"),
-            "fields" => { "response" => "code" },
-            "result_size" => 1
+          "hosts" => ["localhost:9200"],
+          "query_template" => File.join(File.dirname(__FILE__), "fixtures", "query_template.json"),
+          "fields" => { "response" => "code" },
+          "result_size" => 1
         }
       end
 
