@@ -1,5 +1,8 @@
 ## 3.3.1
   - Fix: The filter now only calls `filter_matched` on events that actually matched.
+    This fixes issues where all events would have success-related actions happened
+    when no match had actually happened (`add_tag`, `add_field`, `remove_tag`,
+    `remove_field`)
 
 ## 3.3.0
   - Enhancement : if elasticsearch response contains any shard failure, then `tag_on_failure` tags are added to Logstash event
