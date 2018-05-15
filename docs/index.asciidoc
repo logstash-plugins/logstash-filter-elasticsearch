@@ -209,10 +209,10 @@ Whether results should be sorted or not
 [id="plugins-{type}s-{plugin}-fields"]
 ===== `fields` 
 
-  * Value type is <<array,array>>
+  * Value type is <<hash,hash>>
   * Default value is `{}`
 
-Array of fields to copy from old event (found via elasticsearch) into new event
+Hash of fields to copy from old event (found via elasticsearch) into new event
 
 [id="plugins-{type}s-{plugin}-hosts"]
 ===== `hosts` 
