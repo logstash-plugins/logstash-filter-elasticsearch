@@ -89,25 +89,6 @@ if [type] == "end" {
 template.json:
 
 [source,json]
---------------------------------------------------
- {
-    "query": {
-      "query_string": {
-       "query": "type:start AND operation:%{[opid]}"
-      }
-    },
-   "_source": ["@timestamp"]
- }
---------------------------------------------------
-
-As illustrated above, through the use of 'opid', fields from the Logstash
-events can be referenced within the template.
-The template will be populated per event prior to being used to query Elasticsearch.
-
-Note that when you use `query_template`, the Logstash attributes `result_size`
-and `sort` will be ignored. They should be specified directly in the JSON
-template. Example:
-
 [source,json]
 --------------------------------------------------
 {
@@ -121,6 +102,14 @@ template. Example:
   "_source": ["@timestamp"]
 }
 --------------------------------------------------
+
+As illustrated above, through the use of 'opid', fields from the Logstash
+events can be referenced within the template.
+The template will be populated per event prior to being used to query Elasticsearch.
+
+Notice also that when you use `query_template`, the Logstash attributes `result_size`
+and `sort` will be ignored. They should be specified directly in the JSON
+template, as shown in the example above.
 
 
 [id="plugins-{type}s-{plugin}-options"]
