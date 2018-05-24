@@ -201,7 +201,16 @@ Whether results should be sorted or not
   * Value type is <<array,array>>
   * Default value is `{}`
 
-Array of fields to copy from old event (found via elasticsearch) into new event
+An array of fields to copy from the old event (found via elasticsearch) into the
+new event, currently being processed.
+
+In the following example, the value of `@timestamp` on the event found via
+elasticsearch is copied to the current event's `started` field:
+
+[source,ruby]
+--------------------------------------------------
+fields => { "@timestamp" => "started" }
+--------------------------------------------------
 
 [id="plugins-{type}s-{plugin}-hosts"]
 ===== `hosts` 
