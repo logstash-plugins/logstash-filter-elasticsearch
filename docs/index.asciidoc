@@ -204,12 +204,16 @@ Whether results should be sorted or not
 An array of fields to copy from the old event (found via elasticsearch) into the
 new event, currently being processed.
 
-In the following example, the value of `@timestamp` on the event found via
-elasticsearch is copied to the current event's `started` field:
+In the following example, the values of `@timestamp` and `event_id` on the event
+found via elasticsearch are copied to the current event's
+`started` and `start_id` fields, respectively:
 
 [source,ruby]
 --------------------------------------------------
-fields => { "@timestamp" => "started" }
+fields => {
+  "@timestamp" => "started"
+  "event_id" => "start_id"
+}
 --------------------------------------------------
 
 [id="plugins-{type}s-{plugin}-hosts"]
