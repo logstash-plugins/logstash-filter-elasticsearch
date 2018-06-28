@@ -71,6 +71,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       @query_dsl = file.read
     end
 
+    validate_client_config!
   end # def register
 
   def filter(event)
@@ -145,6 +146,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   def get_client
     @clients_pool.computeIfAbsent(Thread.current, lambda { |x| new_client })
   end
+
+  alias :validate_client_config! :get_client
 
   # get an array of path elements from a path reference
   def extract_path(path_reference)
