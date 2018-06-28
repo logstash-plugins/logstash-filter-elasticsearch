@@ -65,7 +65,13 @@ describe LogStash::Filters::ElasticsearchClient do
       LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['https://example.org:9200', 'http://localhost:9200']))
     end
 
-    it "should add https to schema-less hosts when specifying ssl true"
+    it "should add https to schema-less hosts when specifying ssl true" do
+      expect(::Elasticsearch::Client).to receive(:new) do |args|
+        expect(args[:hosts]).to eq(['https://example.org:9200'])
+      end
+      LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(ssl: true, hosts: ['example.org:9200']))
+    end
+
     it "should log an error and raise, when specifying a schema in at least one host, and setting ssl true"
     it "should log an error and raise, when specifying a schema in at least one host, and setting ssl false"
 
