@@ -12,18 +12,11 @@ module LogStash
       URI_TEMPLATE = '%{scheme}://%{host}'.freeze
 
       def initialize(user, password, options={})
+        ElasticsearchClient.validate_config!(user, password, options)
+
         ssl     = options[:ssl]
         hosts   = options[:hosts]
         @logger = options[:logger]
-
-        unless ssl.nil?
-          if hosts.detect {|h| h =~ %r(^https?://) }
-            @logger.error "Conflicting configuration detected: " +
-              "you cannot specify a schema in your hosts and set the 'ssl' option at the same time. " +
-              "You must use one or the other.", ssl: ssl, hosts: hosts
-            raise LogStash::ConfigurationError, "Aborting due to conflicting configuration"
-          end
-        end
 
         transport_options = {}
         if user && password
@@ -41,6 +34,20 @@ module LogStash
 
       def search(params)
         @client.search(params)
+      end
+
+      def self.validate_config!(user, password, options={})
+        ssl     = options[:ssl]
+        hosts   = options[:hosts]
+        logger  = options[:logger]
+        unless ssl.nil?
+          if hosts.detect {|h| h =~ %r(^https?://) }
+            logger.error "Conflicting configuration detected: " +
+              "you cannot specify a schema in your hosts and set the 'ssl' option at the same time. " +
+              "You must use one or the other.", ssl: ssl, hosts: hosts
+            raise LogStash::ConfigurationError, "Aborting due to conflicting configuration"
+          end
+        end
       end
 
     end
