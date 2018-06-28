@@ -2,10 +2,6 @@
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/filters/elasticsearch/client"
 
-def password(pass)
-
-end
-
 describe LogStash::Filters::ElasticsearchClient do
   let(:logger) do
     log = Object.new
