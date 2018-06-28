@@ -12,7 +12,7 @@ module LogStash
       URI_TEMPLATE = '%{scheme}://%{host}'.freeze
 
       def initialize(user, password, options={})
-        ssl     = options.fetch(:ssl, false)
+        ssl     = options[:ssl]
         hosts   = options[:hosts]
         @logger = options[:logger]
 
