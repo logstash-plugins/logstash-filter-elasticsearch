@@ -1,3 +1,8 @@
+## 3.3.2
+  - Fixed `ssl => true` to no longer raises an `URI::InvalidURIError` exception.
+  - Added tests for the ES client helper class.
+  - Added documentation for the `ssl` attribute.
+
 ## 3.3.1
   - Fix: The filter now only calls `filter_matched` on events that actually matched.
     This fixes issues where all events would have success-related actions happened
