@@ -48,10 +48,9 @@ module LogStash
         ssl     = options[:ssl]
         hosts   = options[:hosts]
         logger  = options[:logger]
-        if  (ssl == true && hosts.any? {|h| h.start_with?('http://') }) ||
-            (ssl == false && hosts.any? {|h| h.start_with?('https://') })
-          logger.error "SSL option was explicitly set to #{ssl} but a host " +
-            "was also explicitly declared with a conflicting scheme. " +
+        if ssl == true && hosts.any? {|h| h.start_with?('http://') }
+          logger.error "SSL option was set to true but a host " +
+            "was also declared with a conflicting scheme, http://. " +
             "Please reconcile this.", ssl: ssl, hosts: hosts
           raise LogStash::ConfigurationError, "Aborting due to conflicting configuration"
         end

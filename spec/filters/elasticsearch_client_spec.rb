@@ -97,14 +97,6 @@ describe LogStash::Filters::ElasticsearchClient do
         LogStash::Filters::ElasticsearchClient.new(nil, nil,
           options.merge(hosts: ['http://example.org:9200', 'localhost:9200']))
       end
-
-      it "should log an error and raise, when specifying a schema in at least one host, and setting ssl false" do
-        expect(logger).to receive(:error).with(/conflicting.*scheme/i, hash_including(:ssl, :hosts))
-        expect {
-          LogStash::Filters::ElasticsearchClient.new(nil, nil,
-            options.merge(hosts: ['localhost:9200', 'https://example.org:9200']))
-        }.to raise_error(LogStash::ConfigurationError)
-      end
     end
 
   end

@@ -90,7 +90,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         query = event.sprintf(@query)
         params[:q] = query
         params[:size] = result_size
-        params[:sort] =  @sort if @enable_sort
+        params[:sort] = @sort if @enable_sort
       end
 
       @logger.debug("Querying elasticsearch for lookup", :params => params)
