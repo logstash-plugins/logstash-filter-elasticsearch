@@ -44,9 +44,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # Enable SSL/TLS secured communication to Elasticsearch cluster. Leaving this unspecified will use whatever scheme
   # is specified in the URLs listed in 'hosts'. Mixed schemes are supported.
-  # If no explicit protocol is specified plain HTTP will be used.
-  # If SSL is set to true or false, the plugin will refuse to start if any of
-  # the hosts specifies a conflicting scheme with the value of the ssl attribute.
+  # If no explicit protocol is specified, plain HTTP will be used.
+  # If SSL is set to true, the plugin will refuse to start if any of
+  # the hosts specifies an 'http://' scheme.
   config :ssl, :validate => :boolean
 
   # SSL Certificate Authority file
