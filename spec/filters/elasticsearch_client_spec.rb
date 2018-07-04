@@ -33,36 +33,6 @@ describe LogStash::Filters::ElasticsearchClient do
       LogStash::Filters::ElasticsearchClient.new('user', LogStash::Util::Password.new('pass'), options)
     end
 
-    context 'when ssl is not set' do
-      it "should accept schema-less hosts and pass them along without modification" do
-        expect(::Elasticsearch::Client).to receive(:new) do |args|
-          expect(args[:hosts]).to eq(['example.org:9200'])
-        end
-        LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['example.org:9200']))
-      end
-
-      it "should accept hosts with http schema" do
-        expect(::Elasticsearch::Client).to receive(:new) do |args|
-          expect(args[:hosts]).to eq(['http://example.org:9200'])
-        end
-        LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['http://example.org:9200']))
-      end
-
-      it "should accept hosts with https schema" do
-        expect(::Elasticsearch::Client).to receive(:new) do |args|
-          expect(args[:hosts]).to eq(['https://example.org:9200'])
-        end
-        LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['https://example.org:9200']))
-      end
-
-      it "should accept hosts with mixed schemas" do
-        expect(::Elasticsearch::Client).to receive(:new) do |args|
-          expect(args[:hosts]).to eq(['https://example.org:9200', 'http://localhost:9200'])
-        end
-        LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['https://example.org:9200', 'http://localhost:9200']))
-      end
-    end
-
     context 'when ssl is true' do
       let(:options) do
         super.merge(ssl: true)
@@ -96,6 +66,24 @@ describe LogStash::Filters::ElasticsearchClient do
         end
         LogStash::Filters::ElasticsearchClient.new(nil, nil,
           options.merge(hosts: ['http://example.org:9200', 'localhost:9200']))
+      end
+
+      # The behaviour remaining in this context has been in place for a while.
+      # It is counter-intuitive, but fixing it is a breaking change and this
+      # plugin's http subsystem is due to be rewritten anyway. So not the best
+      # time to push out breaking changes on people.
+      it "currently accept hosts with https schema" do
+        expect(::Elasticsearch::Client).to receive(:new) do |args|
+          expect(args[:hosts]).to eq(['https://example.org:9200'])
+        end
+        LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['https://example.org:9200']))
+      end
+
+      it "should accept hosts with mixed schemas" do
+        expect(::Elasticsearch::Client).to receive(:new) do |args|
+          expect(args[:hosts]).to eq(['https://example.org:9200', 'http://localhost:9200'])
+        end
+        LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['https://example.org:9200', 'http://localhost:9200']))
       end
     end
 
