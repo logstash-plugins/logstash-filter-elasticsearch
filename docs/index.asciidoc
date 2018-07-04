@@ -89,7 +89,6 @@ if [type] == "end" {
 template.json:
 
 [source,json]
-[source,json]
 --------------------------------------------------
 {
   "size": 1,
