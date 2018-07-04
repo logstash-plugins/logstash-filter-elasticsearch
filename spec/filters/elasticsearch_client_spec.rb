@@ -33,55 +33,78 @@ describe LogStash::Filters::ElasticsearchClient do
       LogStash::Filters::ElasticsearchClient.new('user', LogStash::Util::Password.new('pass'), options)
     end
 
-    it "should accept schema-less hosts and pass them along without modification" do
-      expect(::Elasticsearch::Client).to receive(:new) do |args|
-        expect(args[:hosts]).to eq(['example.org:9200'])
+    context 'when ssl is not set' do
+      it "should accept schema-less hosts and pass them along without modification" do
+        expect(::Elasticsearch::Client).to receive(:new) do |args|
+          expect(args[:hosts]).to eq(['example.org:9200'])
+        end
+        LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['example.org:9200']))
       end
-      LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['example.org:9200']))
+
+      it "should accept hosts with http schema" do
+        expect(::Elasticsearch::Client).to receive(:new) do |args|
+          expect(args[:hosts]).to eq(['http://example.org:9200'])
+        end
+        LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['http://example.org:9200']))
+      end
+
+      it "should accept hosts with https schema" do
+        expect(::Elasticsearch::Client).to receive(:new) do |args|
+          expect(args[:hosts]).to eq(['https://example.org:9200'])
+        end
+        LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['https://example.org:9200']))
+      end
+
+      it "should accept hosts with mixed schemas" do
+        expect(::Elasticsearch::Client).to receive(:new) do |args|
+          expect(args[:hosts]).to eq(['https://example.org:9200', 'http://localhost:9200'])
+        end
+        LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['https://example.org:9200', 'http://localhost:9200']))
+      end
     end
 
-    it "should accept hosts with http schema" do
-      expect(::Elasticsearch::Client).to receive(:new) do |args|
-        expect(args[:hosts]).to eq(['http://example.org:9200'])
+    context 'when ssl is true' do
+      let(:options) do
+        super.merge(ssl: true)
       end
-      LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['http://example.org:9200']))
-    end
 
-    it "should accept hosts with https schema" do
-      expect(::Elasticsearch::Client).to receive(:new) do |args|
-        expect(args[:hosts]).to eq(['https://example.org:9200'])
-      end
-      LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['https://example.org:9200']))
-    end
-
-    it "should accept hosts with mixed schemas" do
-      expect(::Elasticsearch::Client).to receive(:new) do |args|
-        expect(args[:hosts]).to eq(['https://example.org:9200', 'http://localhost:9200'])
-      end
-      LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(hosts: ['https://example.org:9200', 'http://localhost:9200']))
-    end
-
-    it "should add https to schema-less hosts when specifying ssl true" do
-      expect(::Elasticsearch::Client).to receive(:new) do |args|
-        expect(args[:hosts]).to eq(['https://example.org:9200'])
-      end
-      LogStash::Filters::ElasticsearchClient.new(nil, nil, options.merge(ssl: true, hosts: ['example.org:9200']))
-    end
-
-    it "should log an error and raise, when specifying a schema in at least one host, and setting ssl true" do
-      expect(logger).to receive(:error).with(/conflicting.*schema/i, hash_including(:ssl, :hosts))
-      expect {
+      it "should add https to schema-less hosts and accept hosts already with https" do
+        expect(::Elasticsearch::Client).to receive(:new) do |args|
+          expect(args[:hosts]).to eq(['https://example.org:9200', 'https://secure.example.org:9200'])
+        end
         LogStash::Filters::ElasticsearchClient.new(nil, nil,
-          options.merge(ssl: true, hosts: ['localhost:9200', 'http://example.org:9200']))
-      }.to raise_error(LogStash::ConfigurationError)
+          options.merge(hosts: ['example.org:9200', 'https://secure.example.org:9200']))
+      end
+
+      it "should log an error and raise if any host has an http schema" do
+        expect(logger).to receive(:error).with(/conflicting.*scheme/i, hash_including(:ssl, :hosts))
+        expect {
+          LogStash::Filters::ElasticsearchClient.new(nil, nil,
+            options.merge(hosts: ['http://localhost:9200', 'example.org:9200']))
+        }.to raise_error(LogStash::ConfigurationError)
+      end
     end
 
-    it "should log an error and raise, when specifying a schema in at least one host, and setting ssl false" do
-      expect(logger).to receive(:error).with(/conflicting.*schema/i, hash_including(:ssl, :hosts))
-      expect {
+    context 'when ssl is false' do
+      let(:options) do
+        super.merge(ssl: false)
+      end
+
+      it "should accept schema-less and http hosts and pass them along without modification" do
+        expect(::Elasticsearch::Client).to receive(:new) do |args|
+          expect(args[:hosts]).to eq(['http://example.org:9200', 'localhost:9200'])
+        end
         LogStash::Filters::ElasticsearchClient.new(nil, nil,
-          options.merge(ssl: false, hosts: ['localhost:9200', 'https://example.org:9200']))
-      }.to raise_error(LogStash::ConfigurationError)
+          options.merge(hosts: ['http://example.org:9200', 'localhost:9200']))
+      end
+
+      it "should log an error and raise, when specifying a schema in at least one host, and setting ssl false" do
+        expect(logger).to receive(:error).with(/conflicting.*scheme/i, hash_including(:ssl, :hosts))
+        expect {
+          LogStash::Filters::ElasticsearchClient.new(nil, nil,
+            options.merge(hosts: ['localhost:9200', 'https://example.org:9200']))
+        }.to raise_error(LogStash::ConfigurationError)
+      end
     end
 
   end
