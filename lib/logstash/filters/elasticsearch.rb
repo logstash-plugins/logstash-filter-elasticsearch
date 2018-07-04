@@ -47,7 +47,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # If no explicit protocol is specified, plain HTTP will be used.
   # If SSL is set to true, the plugin will refuse to start if any of
   # the hosts specifies an 'http://' scheme.
-  config :ssl, :validate => :boolean
+  config :ssl, :validate => :boolean, :default => false
 
   # SSL Certificate Authority file
   config :ca_file, :validate => :path
