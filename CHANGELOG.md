@@ -1,3 +1,6 @@
+## 3.3.2
+  - Improves error logging to fully inspect caught exceptions
+
 ## 3.3.1
   - Fix: The filter now only calls `filter_matched` on events that actually matched.
     This fixes issues where all events would have success-related actions happened
