@@ -93,6 +93,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       results = get_client.search(params)
       raise "Elasticsearch query error: #{results["_shards"]["failures"]}" if results["_shards"].include? "failures"
 
+      event.set("[@metadata][total_hits]", results['hits']['total'])
+
       resultsHits = results["hits"]["hits"]
       if !resultsHits.nil? && !resultsHits.empty?
         matched = true
