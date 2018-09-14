@@ -1,3 +1,7 @@
+## 3.4.0
+  - Adds `[@metadata][total_hits]` with total hits returned from the query ([#106](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/106))
+  - Improves error logging to fully inspect caught exceptions ([#105](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/105))
+
 ## 3.3.1
   - Fix: The filter now only calls `filter_matched` on events that actually matched.
     This fixes issues where all events would have success-related actions happened
