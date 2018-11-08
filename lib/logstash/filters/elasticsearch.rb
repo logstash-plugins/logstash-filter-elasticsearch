@@ -71,6 +71,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       @query_dsl = file.read
     end
 
+    test_connection!
   end # def register
 
   def filter(event)
@@ -123,7 +124,13 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       end
 
     rescue => e
-      @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query, :event => event, :error => e.inspect)
+      if @logger.trace?
+        @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query, :event => event.to_hash, :error => e.message, :backtrace => e.backtrace)
+      elsif @logger.debug?
+        @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :error => e.message, :backtrace => e.backtrace)
+      else
+        @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :error => e.message)
+      end
       @tag_on_failure.each{|tag| event.tag(tag)}
     else
       filter_matched(event) if matched
@@ -164,5 +171,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       break unless memo.include?(old_key_fragment)
       memo[old_key_fragment]
     end
+  end
+
+  def test_connection!
+    get_client.client.ping
   end
 end #class LogStash::Filters::Elasticsearch

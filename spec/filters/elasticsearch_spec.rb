@@ -9,6 +9,9 @@ describe LogStash::Filters::Elasticsearch do
   context "registration" do
 
     let(:plugin) { LogStash::Plugin.lookup("filter", "elasticsearch").new({}) }
+    before do
+      allow(plugin).to receive(:test_connection!)
+    end
 
     it "should not raise an exception" do
       expect {plugin.register}.to_not raise_error
@@ -37,6 +40,7 @@ describe LogStash::Filters::Elasticsearch do
     before(:each) do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
       allow(client).to receive(:search).and_return(response)
+      allow(plugin).to receive(:test_connection!)
       plugin.register
     end
 
