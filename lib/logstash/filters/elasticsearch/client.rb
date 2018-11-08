@@ -1,6 +1,7 @@
 # encoding: utf-8
 require "elasticsearch"
 require "base64"
+require "elasticsearch/transport/transport/http/manticore"
 
 
 module LogStash
@@ -22,10 +23,11 @@ module LogStash
 
         hosts.map! {|h| { host: h, scheme: 'https' } } if ssl
         # set ca_file even if ssl isn't on, since the host can be an https url
-        transport_options[:ssl] = { ca_file: options[:ca_file] } if options[:ca_file]
+        ssl_options = { ssl: true, ca_file: options[:ca_file] } if options[:ca_file]
+        ssl_options ||= {}
 
         @logger.info("New ElasticSearch filter client", :hosts => hosts)
-        @client = ::Elasticsearch::Client.new(hosts: hosts, transport_options: transport_options)
+        @client = ::Elasticsearch::Client.new(hosts: hosts, transport_options: transport_options, transport_class: ::Elasticsearch::Transport::Transport::HTTP::Manticore, :ssl => ssl_options)
       end
 
       def search(params)

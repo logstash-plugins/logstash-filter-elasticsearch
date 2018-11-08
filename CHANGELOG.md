@@ -1,3 +1,8 @@
+## 3.5.0
+  - Added connection check during register to avoid failures during processing
+  - Changed Elasticsearch Client transport to use Manticore
+  - Changed amount of logging details during connection failure
+
 ## 3.4.0
   - Adds `[@metadata][total_hits]` with total hits returned from the query ([#106](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/106))
   - Improves error logging to fully inspect caught exceptions ([#105](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/105))
