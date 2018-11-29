@@ -113,6 +113,26 @@ describe LogStash::Filters::Elasticsearch do
       end
     end
 
+    context 'when Elasticsearch 7.x gives us a totals object instead of an integer' do
+      let(:config) do
+        {
+            "hosts" => ["localhost:9200"],
+            "query" => "response: 404",
+            "fields" => { "response" => "code" },
+            "result_size" => 10
+        }
+      end
+
+      let(:response) do
+        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "elasticsearch_7.x_hits_total_as_object.json")))
+      end
+
+      it "should enhance the current event with new data" do
+        plugin.filter(event)
+        expect(event.get("[@metadata][total_hits]")).to eq(13476)
+      end
+    end
+
     context "if something wrong happen during connection" do
 
       before(:each) do
