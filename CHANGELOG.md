@@ -1,3 +1,6 @@
+## 3.6.0
+  - Add support for extracting hits total from Elasticsearch 7.x responses
+
 ## 3.5.0
   - Added connection check during register to avoid failures during processing
   - Changed Elasticsearch Client transport to use Manticore
