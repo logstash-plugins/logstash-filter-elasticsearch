@@ -94,7 +94,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       results = get_client.search(params)
       raise "Elasticsearch query error: #{results["_shards"]["failures"]}" if results["_shards"].include? "failures"
 
-      event.set("[@metadata][total_hits]", results['hits']['total'])
+      event.set("[@metadata][total_hits]", extract_total_from_hits(results['hits']))
 
       resultsHits = results["hits"]["hits"]
       if !resultsHits.nil? && !resultsHits.empty?
@@ -171,6 +171,21 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       break unless memo.include?(old_key_fragment)
       memo[old_key_fragment]
     end
+  end
+
+  # Given a "hits" object from an Elasticsearch response, return the total number of hits in
+  # the result set.
+  # @param hits [Hash{String=>Object}]
+  # @return [Integer]
+  def extract_total_from_hits(hits)
+    total = hits['total']
+
+    # Elasticsearch 7.x produces an object containing `value` and `relation` in order
+    # to enable unambiguous reporting when the total is only a lower bound; if we get
+    # an object back, return its `value`.
+    return total['value'] if total.kind_of?(Hash)
+
+    total
   end
 
   def test_connection!
