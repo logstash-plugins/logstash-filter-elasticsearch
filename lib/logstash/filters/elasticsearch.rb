@@ -11,7 +11,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # List of elasticsearch hosts to use for querying.
   config :hosts, :validate => :array,  :default => [ "localhost:9200" ]
-  
+
   # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices.
   # Field substitution (e.g. `index-name-%{date_field}`) is available
   config :index, :validate => :string, :default => ""
@@ -41,6 +41,15 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # Basic Auth - password
   config :password, :validate => :password
+
+  # AWS Auth - Region
+  config :region, :validate => :string
+
+  # AWS Auth - Access Key ID
+  config :aws_access_key_id, :validate => :string
+
+  # AWS Auth - Secret Access Key
+  config :aws_secret_access_key, :valdiate => :string
 
   # SSL
   config :ssl, :validate => :boolean, :default => false
@@ -143,7 +152,10 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       :ssl => @ssl,
       :hosts => @hosts,
       :ca_file => @ca_file,
-      :logger => @logger
+      :logger => @logger,
+      :aws_access_key_id => @aws_access_key_id,
+      :aws_secret_access_key => @aws_secret_access_key,
+      :region => @region
     }
   end
 
