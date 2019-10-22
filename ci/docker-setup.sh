@@ -23,18 +23,12 @@ if [ "$ELASTIC_STACK_VERSION" ]; then
       export ELASTIC_STACK_VERSION=$ELASTIC_STACK_RETRIEVED_VERSION
     fi
 
-    if [[ "$DISTRIBUTION" = "oss" ]]; then
-      export DISTRIBUTION_SUFFIX="-oss"
-    else
-      export DISTRIBUTION_SUFFIX=""
-    fi
-
     echo "Testing against version: $ELASTIC_STACK_VERSION"
 
     if [[ "$ELASTIC_STACK_VERSION" = *"-SNAPSHOT" ]]; then
         cd /tmp
 
-        jq=".build.projects.\"logstash\".packages.\"logstash$DISTRIBUTION_SUFFIX-$ELASTIC_STACK_VERSION-docker-image.tar.gz\".url"
+        jq=".build.projects.\"logstash\".packages.\"logstash-$ELASTIC_STACK_VERSION-docker-image.tar.gz\".url"
         result=$(curl --silent https://artifacts-api.elastic.co/v1/versions/$ELASTIC_STACK_VERSION/builds/latest | jq -r $jq)
         echo $result
         curl $result > logstash-docker-image.tar.gz
@@ -49,7 +43,7 @@ if [ "$ELASTIC_STACK_VERSION" ]; then
 
           cd /tmp
 
-          jq=".build.projects.\"elasticsearch\".packages.\"elasticsearch$DISTRIBUTION_SUFFIX-$ELASTIC_STACK_VERSION-docker-image.tar.gz\".url"
+          jq=".build.projects.\"elasticsearch\".packages.\"elasticsearch-$ELASTIC_STACK_VERSION-docker-image.tar.gz\".url"
           result=$(curl --silent https://artifacts-api.elastic.co/v1/versions/$ELASTIC_STACK_VERSION/builds/latest | jq -r $jq)
           echo $result
           curl $result > elasticsearch-docker-image.tar.gz
