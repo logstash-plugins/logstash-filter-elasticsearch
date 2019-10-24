@@ -1,3 +1,6 @@
+## 3.6.1
+  - Loosen restrictions on Elasticsearch gem ([#120](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/120))
+
 ## 3.6.0
   - Add support for extracting hits total from Elasticsearch 7.x responses
 
