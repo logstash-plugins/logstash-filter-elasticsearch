@@ -11,9 +11,8 @@ module LogStash
       attr_reader :client
 
       def initialize(user, password, options={})
-        ssl     = options.fetch(:ssl, false)
-        hosts   = options[:hosts]
-        @logger = options[:logger]
+        hosts   = options.fetch(:hosts)
+        @logger = options.fetch(:logger)
 
         transport_options = {}
         if user && password
@@ -21,7 +20,6 @@ module LogStash
           transport_options[:headers] = { Authorization: "Basic #{token}" }
         end
 
-        hosts.map! {|h| { host: h, scheme: 'https' } } if ssl
         # set ca_file even if ssl isn't on, since the host can be an https url
         ssl_options = { ssl: true, ca_file: options[:ca_file] } if options[:ca_file]
         ssl_options ||= {}

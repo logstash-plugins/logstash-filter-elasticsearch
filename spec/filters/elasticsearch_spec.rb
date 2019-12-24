@@ -8,13 +8,199 @@ describe LogStash::Filters::Elasticsearch do
 
   context "registration" do
 
-    let(:plugin) { LogStash::Plugin.lookup("filter", "elasticsearch").new({}) }
-    before do
-      allow(plugin).to receive(:test_connection!)
+    let(:plugin_class) { LogStash::Plugin.lookup("filter", "elasticsearch") }
+    let(:plugin) { plugin_class.new(config) }
+    let(:config) { Hash.new }
+
+    context 'with defaults' do
+      before do
+        allow(plugin).to receive(:test_connection!)
+      end
+
+      it "should not raise an exception" do
+        expect {plugin.register}.to_not raise_error
+      end
     end
 
-    it "should not raise an exception" do
-      expect {plugin.register}.to_not raise_error
+    context 'hosts' do
+      let(:config) do
+        super().merge(
+            'hosts' => hosts
+          )
+      end
+      let(:hosts) do
+        fail NotImplementedError, 'spec or spec group must define `hosts`.'
+      end
+
+      let(:client_stub) { double(:client).as_null_object }
+      let(:logger_stub) { double(:logger).as_null_object }
+
+      before(:each) do
+        allow(plugin).to receive(:logger).and_return(logger_stub)
+      end
+
+      context 'with schema://hostname' do
+        let(:hosts) { ['http://foo.local', 'http://bar.local'] }
+
+        it 'creates client with URIs that do not include a port' do
+          expect(::Elasticsearch::Client).to receive(:new) do |options|
+            expect(options).to include :hosts
+            expect(options[:hosts]).to be_an Array
+            expect(options[:hosts]).to include(having_attributes(host: 'foo.local', scheme: 'http', port: nil))
+            expect(options[:hosts]).to include(having_attributes(host: 'bar.local', scheme: 'http', port: nil))
+          end.and_return(client_stub)
+
+          plugin.register
+        end
+      end
+
+      context 'with `ssl => true`' do
+        let(:config) { super().merge('ssl' => 'true') }
+        context 'and one or more explicitly-http hosts' do
+          let(:hosts) { ['https://foo.local', 'http://bar.local'] }
+
+          it 'raises an exception' do
+            expect { plugin.register }.to raise_error(LogStash::ConfigurationError)
+          end
+
+          it 'emits a helpful log message' do
+            plugin.register rescue nil
+            expect(plugin.logger).to have_received(:error).with(match(/force SSL/))
+          end
+        end
+
+        context 'and all explicitly-https hosts' do
+          let(:hosts) { ['https://foo.local', 'https://bar.local'] }
+
+          it 'sets the schemas on all to https' do
+            expect(::Elasticsearch::Client).to receive(:new) do |options|
+              expect(options).to include :hosts
+              expect(options[:hosts]).to be_an Array
+              options[:hosts].each do |host|
+                expect(host).to be_an URI
+                expect(host.scheme).to eq 'https'
+              end
+            end.and_return(client_stub)
+
+            plugin.register
+          end
+        end
+
+        context 'and one or more schemaless hosts' do
+          let(:hosts) { ['https://foo.local', 'bar.local'] }
+
+          it 'sets the schemas on all to https' do
+            expect(::Elasticsearch::Client).to receive(:new) do |options|
+              expect(options).to include :hosts
+              expect(options[:hosts]).to be_an Array
+              options[:hosts].each do |host|
+                expect(host).to be_an URI
+                expect(host.scheme).to eq 'https'
+              end
+            end.and_return(client_stub)
+
+            plugin.register
+          end
+        end
+
+        context 'with one or more ipv6 hostnames' do
+            let(:hosts) { ['[::1]', '[::2]:9201', 'https://[::3]:9202', '::4'] }
+            it 'defaults to the http protocol' do
+              expect(::Elasticsearch::Client).to receive(:new) do |options|
+                expect(options).to include :hosts
+                expect(options[:hosts]).to be_an Array
+                expect(options[:hosts]).to include(having_attributes(scheme: 'https', host: '[::1]', port: nil))
+                expect(options[:hosts]).to include(having_attributes(scheme: 'https', host: '[::2]', port: 9201))
+                expect(options[:hosts]).to include(having_attributes(scheme: 'https', host: '[::3]', port: 9202))
+                expect(options[:hosts]).to include(having_attributes(scheme: 'https', host: '[::4]', port: nil))
+              end.and_return(client_stub)
+
+              plugin.register
+            end
+          end
+      end
+
+      {
+        'with `ssl => false' => {'ssl' => 'false'},
+        'without `ssl` directive' => {}
+      }.each do |context_string, config_override|
+        context(context_string) do
+          let(:config) { super().merge(config_override) }
+
+          context 'with a mix of http and https hosts' do
+            let(:hosts) { ['https://foo.local', 'http://bar.local'] }
+            it 'does not modify the protocol' do
+              expect(::Elasticsearch::Client).to receive(:new) do |options|
+                expect(options).to include :hosts
+                expect(options[:hosts]).to be_an Array
+                expect(options[:hosts]).to include(having_attributes(scheme: 'https', host: 'foo.local', port: nil))
+                expect(options[:hosts]).to include(having_attributes(scheme: 'http',  host: 'bar.local', port: nil))
+              end.and_return(client_stub)
+
+              plugin.register
+            end
+          end
+
+          context 'with https-only hosts' do
+            let(:hosts) { ['https://foo.local', 'https://bar.local'] }
+            it 'does not modify the protocol' do
+              expect(::Elasticsearch::Client).to receive(:new) do |options|
+                expect(options).to include :hosts
+                expect(options[:hosts]).to be_an Array
+                expect(options[:hosts]).to include(having_attributes(scheme: 'https', host: 'foo.local', port: nil))
+                expect(options[:hosts]).to include(having_attributes(scheme: 'https', host: 'bar.local', port: nil))
+              end.and_return(client_stub)
+
+              plugin.register
+            end
+          end
+
+          context 'with http-only hosts' do
+            let(:hosts) { ['http://foo.local', 'http://bar.local'] }
+            it 'does not modify the protocol' do
+              expect(::Elasticsearch::Client).to receive(:new) do |options|
+                expect(options).to include :hosts
+                expect(options[:hosts]).to be_an Array
+                expect(options[:hosts]).to include(having_attributes(scheme: 'http', host: 'foo.local', port: nil))
+                expect(options[:hosts]).to include(having_attributes(scheme: 'http', host: 'bar.local', port: nil))
+              end.and_return(client_stub)
+
+              plugin.register
+            end
+          end
+
+          context 'with one or more schemaless hosts' do
+            let(:hosts) { ['foo.local', 'bar.local' ] }
+            it 'defaults to the http protocol' do
+              expect(::Elasticsearch::Client).to receive(:new) do |options|
+                expect(options).to include :hosts
+                expect(options[:hosts]).to be_an Array
+                expect(options[:hosts]).to include(having_attributes(scheme: 'http', host: 'foo.local', port: nil))
+                expect(options[:hosts]).to include(having_attributes(scheme: 'http', host: 'bar.local', port: nil))
+              end.and_return(client_stub)
+
+              plugin.register
+            end
+          end
+
+          context 'with one or more square-bracketed ipv6 literals' do
+            let(:hosts) { ['[::1]', '[::2]:9201', 'http://[::3]','https://[::4]:9202', '::5'] }
+            it 'defaults to the http protocol' do
+              expect(::Elasticsearch::Client).to receive(:new) do |options|
+                expect(options).to include :hosts
+                expect(options[:hosts]).to be_an Array
+                expect(options[:hosts]).to include(having_attributes(scheme: 'http',  host: '[::1]', port: nil))
+                expect(options[:hosts]).to include(having_attributes(scheme: 'http',  host: '[::2]', port: 9201))
+                expect(options[:hosts]).to include(having_attributes(scheme: 'http',  host: '[::3]', port: nil))
+                expect(options[:hosts]).to include(having_attributes(scheme: 'https', host: '[::4]', port: 9202))
+                expect(options[:hosts]).to include(having_attributes(scheme: 'http',  host: '[::5]', port: nil))
+              end.and_return(client_stub)
+
+              plugin.register
+            end
+          end
+        end
+      end
     end
   end
 

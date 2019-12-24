@@ -221,6 +221,12 @@ fields => {
 
   * Value type is <<array,array>>
   * Default value is `["localhost:9200"]`
+  * Format for each entry is one of:
+    - a valid RFC3986 URI with scheme, hostname, and optional port
+    - an ipv4 address, optionally followed by a colon and port number
+    - a hostname, optionally followed by a colon and port number
+    - a square-bracketed ipv6 address, optionally followed by a colon and port number
+    - a bare ipv6 address
 
 List of elasticsearch hosts to use for querying.
 
@@ -281,7 +287,9 @@ Comma-delimited list of `<field>:<direction>` pairs that define the sort order
   * Value type is <<boolean,boolean>>
   * Default value is `false`
 
-SSL
+Force SSL/TLS secured communication to Elasticsearch cluster.
+Leaving this unspecified will use whatever scheme is specified in the URLs listed in <<plugins-{type}s-{plugin}-hosts>>, where mixed schemes are supported.
+If SSL is set to `true`, the plugin will refuse to start if any of the hosts specifies an `http://` scheme.
 
 [id="plugins-{type}s-{plugin}-tag_on_failure"]
 ===== `tag_on_failure` 

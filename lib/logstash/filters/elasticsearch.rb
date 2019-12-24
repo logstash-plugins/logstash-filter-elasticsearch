@@ -5,6 +5,8 @@ require_relative "elasticsearch/client"
 require "logstash/json"
 java_import "java.util.concurrent.ConcurrentHashMap"
 
+require 'resolv'
+
 
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config_name "elasticsearch"
@@ -70,6 +72,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       file = File.open(@query_template, "rb")
       @query_dsl = file.read
     end
+
+    @normalised_hosts = normalise_hosts(@hosts, @ssl)
 
     test_connection!
   end # def register
@@ -140,8 +144,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   private
   def client_options
     {
-      :ssl => @ssl,
-      :hosts => @hosts,
+      :hosts => @normalised_hosts,
       :ca_file => @ca_file,
       :logger => @logger
     }
@@ -190,5 +193,85 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   def test_connection!
     get_client.client.ping
+  end
+
+  private
+
+  PATTERN_START_WITH_URI_SCHEME =
+    %r{\A[[:alpha:]][[:alnum:]\.\+\-]*://}i
+
+  PATTERN_CAPTURING_HOSTNAME_AND_OPTIONAL_PORT =
+    %r{\A([^:\[\]]+|\[[^\]]+\])(?::([0-9]+))?\Z}
+
+  ##
+  # Map the provided array-of-strings to an array of `URI::Generic`
+  # instances, which the Elasticsearch client can use to establish
+  # connections.
+  #
+  # @param hosts [Array<String>]: (@see `#normalise_host`)
+  # @param force_ssl [Boolean]: (@see `#normalise_host`)
+  #
+  # @return [Array<URI::Generic>]
+  def normalise_hosts(hosts, force_ssl)
+    hosts.map { |input| normalise_host(input, force_ssl) }
+  end
+
+  ##
+  # Convert the provided string to a `URI::Generic` instance, which the
+  # Elasticsearch client can use to establish connections.
+  #
+  # @param input [String]: a url, in one of the following formats:
+  #                        - a qualified URL with schema, hostname, and
+  #                          optional port
+  #                        - a bare hostname or ip, optionally followed by a
+  #                          colon and port number
+  #                        - a square-bracketed ipv6 literal, optionally
+  #                          followed by a colon and port number
+  #                        - a bare ipv6-address
+  # @param force_ssl [Boolean]: true to force SSL; will cause failure if one
+  #                             or more hosts explicitly supplies non-SSL
+  #                             scheme (e.g., `http`).
+  #
+  # @return [URI::Generic]
+  def normalise_host(input, force_ssl)
+    if force_ssl && input.start_with?('http://')
+      logger.error("Plugin configured to force SSL with `ssl => true`, " +
+                   "but a host explicitly declared non-https URL `#{input}`")
+
+      raise LogStash::ConfigurationError, "Aborting due to conflicting configuration"
+    end
+
+    begin
+      if PATTERN_START_WITH_URI_SCHEME.match(input)
+        # Avoid `URI::parse`, which routes to specific implementations
+        # that inject defaults that do not make sense in this context.
+        URI::Generic.new(*URI.split(input))
+      else
+        if PATTERN_CAPTURING_HOSTNAME_AND_OPTIONAL_PORT.match(input)
+          host, port = Regexp.last_match.captures
+        elsif input =~ Resolv::IPv6::Regex
+          # per RFC3986: to be used as hostname in URIs, ipv6 literals
+          # MUST be wrapped in square-brackets.
+          host, port = "[#{input}]", nil
+        else
+          fail('unsupported format')
+        end
+        URI::Generic.new(
+          force_ssl ? 'https' : 'http',
+          nil, # userinfo,
+          host,
+          port,
+          nil, # registry
+          nil, # path
+          nil, # opaque
+          nil, # query
+          nil  # fragment
+        )
+      end
+    rescue => e
+      logger.error("Plugin configured with invalid host value `#{input}`",
+                   :exception => e.message, :class => e.class.name)
+      raise LogStash::ConfigurationError, "Aborting due to invalid configuration"
+    end
   end
 end #class LogStash::Filters::Elasticsearch
