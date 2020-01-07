@@ -3,15 +3,23 @@ require "logstash/filters/base"
 require "logstash/namespace"
 require_relative "elasticsearch/client"
 require "logstash/json"
+require "logstash/util/safe_uri"
 java_import "java.util.concurrent.ConcurrentHashMap"
 
 
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config_name "elasticsearch"
 
+  DEFAULT_HOST = ::LogStash::Util::SafeURI.new("//localhost:9200")
+
   # List of elasticsearch hosts to use for querying.
-  config :hosts, :validate => :array,  :default => [ "localhost:9200" ]
-  
+  config :hosts, :validate => :array, :default => [ DEFAULT_HOST ]
+
+  # Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
+  #
+  # For more info, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_id[cloud documentation]
+  config :cloud_id, :validate => :string
+
   # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices.
   # Field substitution (e.g. `index-name-%{date_field}`) is available
   config :index, :validate => :string, :default => ""
@@ -42,6 +50,11 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Basic Auth - password
   config :password, :validate => :password
 
+  # Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` configuration.
+  #
+  # For more info, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_auth[cloud documentation]
+  config :cloud_auth, :validate => :password
+
   # SSL
   config :ssl, :validate => :boolean, :default => false
 
@@ -70,6 +83,11 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       file = File.open(@query_template, "rb")
       @query_dsl = file.read
     end
+
+    fill_hosts_from_cloud_id
+    fill_user_password_from_cloud_auth
+
+    @hosts = Array(@hosts).map { |host| host.to_s } # for ES client URI#to_s
 
     test_connection!
   end # def register
@@ -148,6 +166,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def new_client
+    # NOTE: could pass cloud-id/cloud-auth to client but than we would need to be stricter on ES version requirement
+    # and also LS parsing might differ from ES client's parsing so for consistency we do not pass cloud options ...
     LogStash::Filters::ElasticsearchClient.new(@user, @password, client_options)
   end
 
@@ -186,6 +206,64 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     return total['value'] if total.kind_of?(Hash)
 
     total
+  end
+
+  def hosts_default?(hosts)
+    # NOTE: would be nice if pipeline allowed us a clean way to detect a config default :
+    hosts.is_a?(Array) && hosts.size == 1 && hosts.first.equal?(DEFAULT_HOST)
+  end
+
+  def fill_hosts_from_cloud_id
+    return unless @cloud_id
+
+    if @hosts && !hosts_default?(@hosts)
+      raise LogStash::ConfigurationError, 'Both cloud_id and hosts specified, please only use one of those.'
+    end
+    @hosts = parse_host_uri_from_cloud_id(@cloud_id)
+  end
+
+  def fill_user_password_from_cloud_auth
+    return unless @cloud_auth
+
+    if @user || @password
+      raise LogStash::ConfigurationError, 'Both cloud_auth and user/password specified, please only use one.'
+    end
+    @user, @password = parse_user_password_from_cloud_auth(@cloud_auth)
+    params['user'], params['password'] = @user, @password
+  end
+
+  def parse_host_uri_from_cloud_id(cloud_id)
+    begin # might not be available on older LS
+      require 'logstash/util/cloud_setting_id'
+    rescue LoadError
+      raise LogStash::ConfigurationError, 'The cloud_id setting is not supported by your version of Logstash, ' +
+          'please upgrade your installation (or set hosts instead).'
+    end
+
+    begin
+      cloud_id = LogStash::Util::CloudSettingId.new(cloud_id) # already does append ':{port}' to host
+    rescue ArgumentError => e
+      raise LogStash::ConfigurationError, e.message.to_s.sub(/Cloud Id/i, 'cloud_id')
+    end
+    cloud_uri = "#{cloud_id.elasticsearch_scheme}://#{cloud_id.elasticsearch_host}"
+    LogStash::Util::SafeURI.new(cloud_uri)
+  end
+
+  def parse_user_password_from_cloud_auth(cloud_auth)
+    begin # might not be available on older LS
+      require 'logstash/util/cloud_setting_auth'
+    rescue LoadError
+      raise LogStash::ConfigurationError, 'The cloud_auth setting is not supported by your version of Logstash, ' +
+          'please upgrade your installation (or set user/password instead).'
+    end
+
+    cloud_auth = cloud_auth.value if cloud_auth.is_a?(LogStash::Util::Password)
+    begin
+      cloud_auth = LogStash::Util::CloudSettingAuth.new(cloud_auth)
+    rescue ArgumentError => e
+      raise LogStash::ConfigurationError, e.message.to_s.sub(/Cloud Auth/i, 'cloud_auth')
+    end
+    [ cloud_auth.username, cloud_auth.password ]
   end
 
   def test_connection!
