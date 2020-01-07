@@ -342,7 +342,7 @@ describe LogStash::Filters::Elasticsearch do
           expect { plugin.register }.to raise_error LogStash::ConfigurationError, /cloud_id and hosts/
         end
       end
-    end
+    end if LOGSTASH_VERSION > '6.0'
 
     describe "cloud.auth" do
       let(:config) { super.merge({ 'cloud_auth' => LogStash::Util::Password.new('elastic:my-passwd-00') }) }
@@ -370,6 +370,6 @@ describe LogStash::Filters::Elasticsearch do
           expect { plugin.register }.to raise_error LogStash::ConfigurationError, /cloud_auth and user/
         end
       end
-    end
+    end if LOGSTASH_VERSION > '6.0'
   end
 end
