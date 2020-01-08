@@ -17,7 +17,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
   #
-  # For more info, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_id[cloud documentation]
+  # For more info, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_id[Logstash-to-Cloud documentation]
   config :cloud_id, :validate => :string
 
   # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices.
@@ -52,7 +52,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` configuration.
   #
-  # For more info, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_auth[cloud documentation]
+  # For more info, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_auth[Logstash-to-Cloud documentation]
   config :cloud_auth, :validate => :password
 
   # SSL
