@@ -1,3 +1,6 @@
+## 3.7.0
+  - Feat: support cloud_id / cloud_auth configuration [#122](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/122)
+
 ## 3.6.1
   - Loosen restrictions on Elasticsearch gem ([#120](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/120))
 
