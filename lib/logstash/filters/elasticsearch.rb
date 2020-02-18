@@ -65,7 +65,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config :enable_sort, :validate => :boolean, :default => true
 
   # Whether to set hits to metadata
-  config :include_hits, :validate => :boolean, :default => true
+  config :include_hits, :validate => :boolean, :default => false
 
   # How many results to return
   config :result_size, :validate => :number, :default => 1
