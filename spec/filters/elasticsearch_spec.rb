@@ -372,4 +372,30 @@ describe LogStash::Filters::Elasticsearch do
       end
     end if LOGSTASH_VERSION > '6.0'
   end
+
+  describe "query template" do
+    let(:config) do
+      {
+          "query_template" => File.join(File.dirname(__FILE__), "fixtures", "query_template_unicode.json"),
+      }
+    end
+
+    let(:plugin) { described_class.new(config) }
+
+    let(:client) { double(:client) }
+
+    before(:each) do
+      allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
+      allow(plugin).to receive(:test_connection!)
+      plugin.register
+    end
+
+    it "should read and send non-ascii query" do
+      expect(client).to receive(:search).with(
+          :body => { "query" => { "terms" => { "lock" => [ "잠금", "uzávěr" ] } } },
+          :index => "")
+
+      plugin.filter(LogStash::Event.new)
+    end
+  end
 end
