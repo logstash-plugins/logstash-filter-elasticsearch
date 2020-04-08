@@ -80,7 +80,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       if File.zero?(@query_template)
         raise "template is empty"
       end
-      file = File.open(@query_template, "rb")
+      file = File.open(@query_template, 'r')
       @query_dsl = file.read
     end
 
