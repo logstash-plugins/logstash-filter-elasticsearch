@@ -1,5 +1,5 @@
 ## 3.7.1
-  - Fix: do not force binary encoding on template [#128](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/128)
+  - Fix: solves an issue where non-ascii unicode values in a template were not handled correctly [#128](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/128)
 
 ## 3.7.0
   - Feat: support cloud_id / cloud_auth configuration [#122](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/122)
