@@ -1,5 +1,5 @@
 ## 3.7.2
-  - [DOC] Removed outdated compatibility notice [#tbd](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/tbd)
+  - [DOC] Removed outdated compatibility notice [#131](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/131)
 
 ## 3.7.1
   - Fix: solves an issue where non-ascii unicode values in a template were not handled correctly [#128](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/128)
