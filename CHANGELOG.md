@@ -1,3 +1,6 @@
+## 3.8.0
+  - Added api_key support [#132](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/132)
+
 ## 3.7.2
   - [DOC] Removed outdated compatibility notice [#131](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/131)
 
