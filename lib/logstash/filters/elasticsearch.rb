@@ -15,11 +15,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # List of elasticsearch hosts to use for querying.
   config :hosts, :validate => :array, :default => [ DEFAULT_HOST ]
 
-  # Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
-  #
-  # For more info, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_id[Logstash-to-Cloud documentation]
-  config :cloud_id, :validate => :string
-
   # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices.
   # Field substitution (e.g. `index-name-%{date_field}`) is available
   config :index, :validate => :string, :default => ""
@@ -50,10 +45,19 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Basic Auth - password
   config :password, :validate => :password
 
+  # Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
+  #
+  # For more info, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_id[Logstash-to-Cloud documentation]
+  config :cloud_id, :validate => :string
+
   # Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` configuration.
   #
   # For more info, check out the https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html#_cloud_auth[Logstash-to-Cloud documentation]
   config :cloud_auth, :validate => :password
+
+  # Authenticate using Elasticsearch API key.
+  # format is id:api_key (as returned by https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html[Create API key])
+  config :api_key, :validate => :password
 
   # SSL
   config :ssl, :validate => :boolean, :default => false
@@ -84,8 +88,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       @query_dsl = file.read
     end
 
-    fill_hosts_from_cloud_id
+    validate_authentication
     fill_user_password_from_cloud_auth
+    fill_hosts_from_cloud_id
 
     @hosts = Array(@hosts).map { |host| host.to_s } # for ES client URI#to_s
 
@@ -156,19 +161,21 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end # def filter
 
   private
+
   def client_options
     {
+      :user => @user,
+      :password => @password,
+      :api_key => @api_key,
       :ssl => @ssl,
-      :hosts => @hosts,
       :ca_file => @ca_file,
-      :logger => @logger
     }
   end
 
   def new_client
     # NOTE: could pass cloud-id/cloud-auth to client but than we would need to be stricter on ES version requirement
     # and also LS parsing might differ from ES client's parsing so for consistency we do not pass cloud options ...
-    LogStash::Filters::ElasticsearchClient.new(@user, @password, client_options)
+    LogStash::Filters::ElasticsearchClient.new(@logger, @hosts, client_options)
   end
 
   def get_client
@@ -213,6 +220,28 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     hosts.is_a?(Array) && hosts.size == 1 && hosts.first.equal?(DEFAULT_HOST)
   end
 
+  def validate_authentication
+    authn_options = 0
+    authn_options += 1 if @cloud_auth
+    authn_options += 1 if (@api_key && @api_key.value)
+    authn_options += 1 if (@user || (@password && @password.value))
+
+    if authn_options > 1
+      raise LogStash::ConfigurationError, 'Multiple authentication options are specified, please only use one of user/password, cloud_auth or api_key'
+    end
+
+    if @api_key && @api_key.value && @ssl != true
+      raise(LogStash::ConfigurationError, "Using api_key authentication requires SSL/TLS secured communication using the `ssl => true` option")
+    end
+  end
+
+  def fill_user_password_from_cloud_auth
+    return unless @cloud_auth
+
+    @user, @password = parse_user_password_from_cloud_auth(@cloud_auth)
+    params['user'], params['password'] = @user, @password
+  end
+
   def fill_hosts_from_cloud_id
     return unless @cloud_id
 
@@ -220,16 +249,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       raise LogStash::ConfigurationError, 'Both cloud_id and hosts specified, please only use one of those.'
     end
     @hosts = parse_host_uri_from_cloud_id(@cloud_id)
-  end
-
-  def fill_user_password_from_cloud_auth
-    return unless @cloud_auth
-
-    if @user || @password
-      raise LogStash::ConfigurationError, 'Both cloud_auth and user/password specified, please only use one.'
-    end
-    @user, @password = parse_user_password_from_cloud_auth(@cloud_auth)
-    params['user'], params['password'] = @user, @password
   end
 
   def parse_host_uri_from_cloud_id(cloud_id)
