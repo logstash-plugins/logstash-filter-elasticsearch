@@ -19,12 +19,12 @@ module LogStash
         transport_options = {:headers => {}}
         transport_options[:headers].merge!(setup_basic_auth(user, password))
         transport_options[:headers].merge!(setup_api_key(api_key))
-
-				# Avoid nesting hosts. Issue #129
+				
+				# Acoid nesting hosts. Issue #129.
 				if ssl
-  	  		hosts.map! do |h|
-    	    	h.is_a?(Hash) ? h : { host: h, scheme: 'https' } 
-  	  		end
+					hosts.map! do |h|
+						h.is_a?(Hash) ? h : { host: h, scheme: 'https' }
+					end
 				end
 	
         # set ca_file even if ssl isn't on, since the host can be an https url
