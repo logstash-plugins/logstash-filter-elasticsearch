@@ -407,7 +407,7 @@ describe LogStash::Filters::Elasticsearch do
 
       it "should set proxy" do
         plugin.register
-        client = plugin.send(:client)
+        client = plugin.send(:get_client).client
         proxy = client.transport.options[:transport_options][:proxy]
 
         expect( proxy ).to eql "http://localhost:1234"
@@ -418,7 +418,7 @@ describe LogStash::Filters::Elasticsearch do
 
         it "should not set proxy" do
           plugin.register
-          client = plugin.send(:client)
+          client = plugin.send(:get_client).client
 
           expect( client.transport.options[:transport_options] ).to_not include(:proxy)
         end
