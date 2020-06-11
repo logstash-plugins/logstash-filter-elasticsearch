@@ -22,7 +22,7 @@ module ESHelper
   end
 
   def self.index_doc(es, params)
-    if ESHelper.es_version_satisfies(">=8")
+    if ESHelper.es_version_satisfies?(">=8")
       # Do not set doc type if ES version >= 8
       nil
     else
