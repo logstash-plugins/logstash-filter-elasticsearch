@@ -15,10 +15,14 @@ module LogStash
         user = options.fetch(:user, nil)
         password = options.fetch(:password, nil)
         api_key = options.fetch(:api_key, nil)
+        proxy = options.fetch(:proxy, nil)
 
         transport_options = {:headers => {}}
         transport_options[:headers].merge!(setup_basic_auth(user, password))
         transport_options[:headers].merge!(setup_api_key(api_key))
+
+        @logger.warn "Supplied proxy setting (proxy => '') has no effect" if @proxy.eql?('')
+        transport_options[:proxy] = @proxy.to_s if @proxy && !@proxy.eql?('')
 
         hosts.map! {|h| { host: h, scheme: 'https' } } if ssl
         # set ca_file even if ssl isn't on, since the host can be an https url

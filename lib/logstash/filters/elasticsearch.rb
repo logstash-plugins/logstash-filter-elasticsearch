@@ -59,6 +59,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # format is id:api_key (as returned by https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html[Create API key])
   config :api_key, :validate => :password
 
+  # Set the address of a forward HTTP proxy.
+  config :proxy, :validate => :uri_or_empty
+
   # SSL
   config :ssl, :validate => :boolean, :default => false
 

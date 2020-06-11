@@ -171,6 +171,16 @@ Authenticate using Elasticsearch API key. Note that this option also requires en
 
 Format is `id:api_key` where `id` and `api_key` are as returned by the Elasticsearch https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html[Create API key API].
 
+[id="plugins-{type}s-{plugin}-proxy"]
+===== `proxy`
+
+* Value type is <<uri,uri>>
+* There is no default value for this setting.
+
+Set the address of a forward HTTP proxy.
+An empty string is treated as if proxy was not set, this is useful when using
+environment variables e.g. `proxy => '${LS_PROXY:}'`.
+
 [id="plugins-{type}s-{plugin}-ca_file"]
 ===== `ca_file` 
 
