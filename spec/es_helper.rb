@@ -24,7 +24,7 @@ module ESHelper
   def self.index_doc(es, params)
     if ESHelper.es_version_satisfies?(">=8")
       # Do not set doc type if ES version >= 8
-      nil
+      params.delete(:_type)
     else
       type = doc_type
       params[:type] = doc_type unless type.nil?
