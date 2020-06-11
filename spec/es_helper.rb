@@ -28,8 +28,8 @@ module ESHelper
     else
       type = doc_type
       params[:type] = doc_type unless type.nil?
-      es.index(params)
     end
+    es.index(params)
   end
 
   def self.es_version
