@@ -21,7 +21,7 @@ module LogStash
         transport_options[:headers].merge!(setup_basic_auth(user, password))
         transport_options[:headers].merge!(setup_api_key(api_key))
 
-        @logger.warn "Supplied proxy setting (proxy => '') has no effect" if @proxy.eql?('')
+        logger.warn "Supplied proxy setting (proxy => '') has no effect" if @proxy.eql?('')
         transport_options[:proxy] = @proxy.to_s if @proxy && !@proxy.eql?('')
 
         hosts.map! {|h| { host: h, scheme: 'https' } } if ssl
