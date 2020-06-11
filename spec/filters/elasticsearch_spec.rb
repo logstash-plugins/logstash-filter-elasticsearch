@@ -403,14 +403,16 @@ describe LogStash::Filters::Elasticsearch do
     end if LOGSTASH_VERSION > '6.0'
 
     describe "proxy" do
-      let(:config) { super.merge({ 'proxy' => 'http://localhost:1234' }) }
+      context 'valid' do
+        let(:config) { super.merge({ 'proxy' => 'http://localhost:1234' }) }
 
-      it "should set proxy" do
-        plugin.register
-        client = plugin.send(:get_client).client
-        proxy = client.transport.options[:transport_options][:proxy]
+        it "should set proxy" do
+          plugin.register
+          client = plugin.send(:get_client).client
+          proxy = client.transport.options[:transport_options][:proxy]
 
-        expect( proxy ).to eql "http://localhost:1234"
+          expect( proxy ).to eql "http://localhost:1234"
+        end
       end
 
       context 'invalid' do

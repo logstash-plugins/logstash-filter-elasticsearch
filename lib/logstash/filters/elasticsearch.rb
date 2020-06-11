@@ -60,7 +60,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config :api_key, :validate => :password
 
   # Set the address of a forward HTTP proxy.
-  config :proxy, :validate => :uri_or_empty
+  config :proxy, :validate => :uri
 
   # SSL
   config :ssl, :validate => :boolean, :default => false
@@ -78,6 +78,22 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config :tag_on_failure, :validate => :array, :default => ["_elasticsearch_lookup_failure"]
 
   attr_reader :clients_pool
+
+  # @override to handle proxy => '' as if none was set
+  def config_init(params)
+    proxy = params['proxy']
+    if proxy.is_a?(String)
+      # environment variables references aren't yet resolved
+      proxy = deep_replace(proxy)
+      if proxy.empty?
+        params.delete('proxy')
+        @proxy = ''
+      else
+        params['proxy'] = proxy # do not do resolving again
+      end
+    end
+    super(params)
+  end
 
   def register
     @clients_pool = java.util.concurrent.ConcurrentHashMap.new
