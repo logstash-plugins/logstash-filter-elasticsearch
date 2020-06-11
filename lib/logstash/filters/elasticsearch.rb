@@ -170,6 +170,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       :user => @user,
       :password => @password,
       :api_key => @api_key,
+      :proxy => @proxy,
       :ssl => @ssl,
       :ca_file => @ca_file,
     }
