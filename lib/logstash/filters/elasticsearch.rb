@@ -59,6 +59,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # format is id:api_key (as returned by https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html[Create API key])
   config :api_key, :validate => :password
 
+  # Set the address of a forward HTTP proxy.
+  config :proxy, :validate => :uri_or_empty
+
   # SSL
   config :ssl, :validate => :boolean, :default => false
 
@@ -75,6 +78,23 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config :tag_on_failure, :validate => :array, :default => ["_elasticsearch_lookup_failure"]
 
   attr_reader :clients_pool
+
+  ##
+  # @override to handle proxy => '' as if none was set
+  # @param value [Array<Object>]
+  # @param validator [nil,Array,Symbol]
+  # @return [Array(true,Object)]: if validation is a success, a tuple containing `true` and the coerced value
+  # @return [Array(false,String)]: if validation is a failure, a tuple containing `false` and the failure reason.
+  def self.validate_value(value, validator)
+    return super unless validator == :uri_or_empty
+
+    value = deep_replace(value)
+    value = hash_or_array(value)
+
+    return true, value.first if value.size == 1 && value.first.empty?
+
+    return super(value, :uri)
+  end
 
   def register
     @clients_pool = java.util.concurrent.ConcurrentHashMap.new
@@ -167,6 +187,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       :user => @user,
       :password => @password,
       :api_key => @api_key,
+      :proxy => @proxy,
       :ssl => @ssl,
       :ca_file => @ca_file,
     }

@@ -1,3 +1,6 @@
+## 3.9.0
+  - Add support to define a proxy with the proxy config option [#134](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/134)
+
 ## 3.8.0
   - Added api_key support [#132](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/132)
 
