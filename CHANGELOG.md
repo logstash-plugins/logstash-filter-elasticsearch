@@ -1,3 +1,6 @@
+## 3.9.1
+  - [DOC] Document the permissions required in secured clusters [#140](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/140)
+  
 ## 3.9.0
   - Add support to define a proxy with the proxy config option [#134](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/134)
 
