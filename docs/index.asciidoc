@@ -1,6 +1,5 @@
 :plugin: elasticsearch
 :type: filter
-:branch: current
 
 ///////////////////////////////////////////
 START - GENERATED VARIABLES, DO NOT EDIT!
@@ -180,7 +179,7 @@ Authenticate using Elasticsearch API key. Note that this option also requires en
 
 Format is `id:api_key` where `id` and `api_key` are as returned by the
 Elasticsearch
-https://www.elastic.co/guide/en/elasticsearch/reference/{branch}/security-api-create-api-key.html[Create
+https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html[Create
 API key API].
 
 [id="plugins-{type}s-{plugin}-proxy"]
@@ -282,7 +281,7 @@ Basic Auth - password
 
 Elasticsearch query string. Read the Elasticsearch query string documentation.
 for more info at:
-https://www.elastic.co/guide/en/elasticsearch/reference/{branch}/query-dsl-query-string-query.html#query-string-syntax
+https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#query-string-syntax
 
 [id="plugins-{type}s-{plugin}-query_template"]
 ===== `query_template` 
@@ -291,7 +290,7 @@ https://www.elastic.co/guide/en/elasticsearch/reference/{branch}/query-dsl-query
   * There is no default value for this setting.
 
 File path to elasticsearch query in DSL format. Read the Elasticsearch query documentation
-for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/{branch}/query-dsl.html
+for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html
 
 [id="plugins-{type}s-{plugin}-result_size"]
 ===== `result_size` 
@@ -342,7 +341,7 @@ Basic Auth - username
 Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` pair.
 
 For more info, check out the
-https://www.elastic.co/guide/en/logstash/{branch}/connecting-to-cloud.html[Logstash-to-Cloud
+https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html[Logstash-to-Cloud
 documentation]
 
 [id="plugins-{type}s-{plugin}-cloud_id"]
@@ -354,7 +353,7 @@ documentation]
 Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
 
 For more info, check out the
-https://www.elastic.co/guide/en/logstash/{branch}/connecting-to-cloud.html[Logstash-to-Cloud
+https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html[Logstash-to-Cloud
 documentation]
 
 
@@ -362,4 +361,3 @@ documentation]
 [id="plugins-{type}s-{plugin}-common-options"]
 include::{include_path}/{type}.asciidoc[]
 
-:branch!:
