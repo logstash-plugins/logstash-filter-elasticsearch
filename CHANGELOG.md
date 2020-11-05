@@ -1,3 +1,6 @@
+## 3.9.2
+  - [DOC] Fixed links to restructured Logstash-to-cloud docs [#142](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/142)
+
 ## 3.9.1
   - [DOC] Document the permissions required in secured clusters [#140](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/140)
   
