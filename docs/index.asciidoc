@@ -182,16 +182,6 @@ Elasticsearch
 https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html[Create
 API key API].
 
-[id="plugins-{type}s-{plugin}-proxy"]
-===== `proxy`
-
-* Value type is <<uri,uri>>
-* There is no default value for this setting.
-
-Set the address of a forward HTTP proxy.
-An empty string is treated as if proxy was not set, and is useful when using
-environment variables e.g. `proxy => '${LS_PROXY:}'`.
-
 [id="plugins-{type}s-{plugin}-ca_file"]
 ===== `ca_file` 
 
@@ -199,6 +189,30 @@ environment variables e.g. `proxy => '${LS_PROXY:}'`.
   * There is no default value for this setting.
 
 SSL Certificate Authority file
+
+[id="plugins-{type}s-{plugin}-cloud_auth"]
+===== `cloud_auth`
+
+  * Value type is <<password,password>>
+  * There is no default value for this setting.
+
+Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` pair.
+
+For more info, check out the
+https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html[Logstash-to-Cloud
+documentation].
+
+[id="plugins-{type}s-{plugin}-cloud_id"]
+===== `cloud_id`
+
+  * Value type is <<string,string>>
+  * There is no default value for this setting.
+
+Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
+
+For more info, check out the
+https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html[Logstash-to-Cloud
+documentation].
 
 [id="plugins-{type}s-{plugin}-docinfo_fields"]
 ===== `docinfo_fields` 
@@ -273,6 +287,16 @@ Field substitution (e.g. `index-name-%{date_field}`) is available
 
 Basic Auth - password
 
+[id="plugins-{type}s-{plugin}-proxy"]
+===== `proxy`
+
+* Value type is <<uri,uri>>
+* There is no default value for this setting.
+
+Set the address of a forward HTTP proxy.
+An empty string is treated as if proxy was not set, and is useful when using
+environment variables e.g. `proxy => '${LS_PROXY:}'`.
+
 [id="plugins-{type}s-{plugin}-query"]
 ===== `query` 
 
@@ -331,31 +355,6 @@ Tags the event on failure to look up previous log event information. This can be
   * There is no default value for this setting.
 
 Basic Auth - username
-
-[id="plugins-{type}s-{plugin}-cloud_auth"]
-===== `cloud_auth`
-
-  * Value type is <<password,password>>
-  * There is no default value for this setting.
-
-Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` pair.
-
-For more info, check out the
-https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html[Logstash-to-Cloud
-documentation]
-
-[id="plugins-{type}s-{plugin}-cloud_id"]
-===== `cloud_id`
-
-  * Value type is <<string,string>>
-  * There is no default value for this setting.
-
-Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
-
-For more info, check out the
-https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html[Logstash-to-Cloud
-documentation]
-
 
 
 [id="plugins-{type}s-{plugin}-common-options"]
