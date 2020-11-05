@@ -360,4 +360,3 @@ documentation]
 
 [id="plugins-{type}s-{plugin}-common-options"]
 include::{include_path}/{type}.asciidoc[]
-
