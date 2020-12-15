@@ -175,12 +175,11 @@ Example:
   * Value type is <<password,password>>
   * There is no default value for this setting.
 
-Authenticate using Elasticsearch API key. Note that this option also requires enabling the `ssl` option.
+Authenticate using Elasticsearch API key. Note that this option also requires
+enabling the `ssl` option.
 
 Format is `id:api_key` where `id` and `api_key` are as returned by the
-Elasticsearch
-https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html[Create
-API key API].
+Elasticsearch {ref}/security-api-create-api-key.html[Create API key API].
 
 [id="plugins-{type}s-{plugin}-ca_file"]
 ===== `ca_file` 
@@ -199,8 +198,7 @@ SSL Certificate Authority file
 Cloud authentication string ("<username>:<password>" format) is an alternative for the `user`/`password` pair.
 
 For more info, check out the
-https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html[Logstash-to-Cloud
-documentation].
+{logstash-ref}/connecting-to-cloud.html[Logstash-to-Cloud documentation].
 
 [id="plugins-{type}s-{plugin}-cloud_id"]
 ===== `cloud_id`
@@ -211,8 +209,7 @@ documentation].
 Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
 
 For more info, check out the
-https://www.elastic.co/guide/en/logstash/current/connecting-to-cloud.html[Logstash-to-Cloud
-documentation].
+{logstash-ref}/connecting-to-cloud.html[Logstash-to-Cloud documentation].
 
 [id="plugins-{type}s-{plugin}-docinfo_fields"]
 ===== `docinfo_fields` 
@@ -303,9 +300,10 @@ environment variables e.g. `proxy => '${LS_PROXY:}'`.
   * Value type is <<string,string>>
   * There is no default value for this setting.
 
-Elasticsearch query string. Read the Elasticsearch query string documentation.
-for more info at:
-https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#query-string-syntax
+Elasticsearch query string. More information is available in the
+{ref}/query-dsl-query-string-query.html#query-string-syntax[Elasticsearch query
+string documentation].
+
 
 [id="plugins-{type}s-{plugin}-query_template"]
 ===== `query_template` 
@@ -313,8 +311,8 @@ https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-
   * Value type is <<string,string>>
   * There is no default value for this setting.
 
-File path to elasticsearch query in DSL format. Read the Elasticsearch query documentation
-for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html
+File path to elasticsearch query in DSL format. More information is available in
+the {ref}/query-dsl.html[Elasticsearch query documentation].
 
 [id="plugins-{type}s-{plugin}-result_size"]
 ===== `result_size` 
