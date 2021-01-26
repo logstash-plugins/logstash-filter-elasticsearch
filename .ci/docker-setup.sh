@@ -6,6 +6,14 @@ set -e
 
 VERSION_URL="https://raw.githubusercontent.com/elastic/logstash/master/ci/logstash_releases.json"
 
+pull_docker_snapshot() {
+  local project="${1?project name required}"
+  local docker_image="docker.elastic.co/${project}/${project}${DISTRIBUTION_SUFFIX}:${ELASTIC_STACK_VERSION}"
+
+  echo "Pulling ${docker_image}"
+  docker pull "${docker_image}"
+}
+
 if [ "$ELASTIC_STACK_VERSION" ]; then
     echo "Fetching versions from $VERSION_URL"
     VERSIONS=$(curl --silent $VERSION_URL)
@@ -26,34 +34,10 @@ if [ "$ELASTIC_STACK_VERSION" ]; then
     echo "Testing against version: $ELASTIC_STACK_VERSION"
 
     if [[ "$ELASTIC_STACK_VERSION" = *"-SNAPSHOT" ]]; then
-        cd /tmp
-
-        jq=".build.projects.\"logstash\".packages.\"logstash-$ELASTIC_STACK_VERSION-docker-image.tar.gz\".url"
-        result=$(curl --silent https://artifacts-api.elastic.co/v1/versions/$ELASTIC_STACK_VERSION/builds/latest | jq -r $jq)
-        echo $result
-        curl $result > logstash-docker-image.tar.gz
-        tar xfvz logstash-docker-image.tar.gz  repositories
-        echo "Loading docker image: "
-        cat repositories
-        docker load < logstash-docker-image.tar.gz
-        rm logstash-docker-image.tar.gz
-        cd -
+        pull_docker_snapshot "logstash"
 
         if [ "$INTEGRATION" == "true" ]; then
-
-          cd /tmp
-
-          jq=".build.projects.\"elasticsearch\".packages.\"elasticsearch-$ELASTIC_STACK_VERSION-docker-image.tar.gz\".url"
-          result=$(curl --silent https://artifacts-api.elastic.co/v1/versions/$ELASTIC_STACK_VERSION/builds/latest | jq -r $jq)
-          echo $result
-          curl $result > elasticsearch-docker-image.tar.gz
-          tar xfvz elasticsearch-docker-image.tar.gz  repositories
-          echo "Loading docker image: "
-          cat repositories
-          docker load < elasticsearch-docker-image.tar.gz
-          rm elasticsearch-docker-image.tar.gz
-          cd -
-
+          pull_docker_snapshot "elasticsearch"
         fi
     fi
 
