@@ -267,6 +267,22 @@ fields => {
 
 List of elasticsearch hosts to use for querying.
 
+**Examples**
+```
+Add examples here
+```
+
+{ls} 7.9 and later supports defining an environment variable `hosts =>
+'${ES_HOSTS}' with multiple whitespace delimited URIs. 
+This plugin automatically expands `hosts` strings that contain multiple
+white-space delimited URs into separate entries. 
+
+**Example**
+```
+ES_HOSTS="es1.example.com es2.example.com:9201 es3.example.com:9201"
+```
+
+
 [id="plugins-{type}s-{plugin}-index"]
 ===== `index` 
 
