@@ -313,7 +313,7 @@ describe LogStash::Filters::Elasticsearch do
         'sample:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlvJGFjMzFlYmI5MDI0MTc3MzE1NzA0M2MzNGZkMjZmZDQ2OjkyNDMkYTRjMDYyMzBlNDhjOGZjZTdiZTg4YTA3NGEzYmIzZTA6OTI0NA=='
       end
 
-      let(:config) { super.merge({ 'cloud_id' => valid_cloud_id }) }
+      let(:config) { super().merge({ 'cloud_id' => valid_cloud_id }) }
 
       it "should set host(s)" do
         plugin.register
@@ -328,7 +328,7 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       context 'invalid' do
-        let(:config) { super.merge({ 'cloud_id' => 'invalid:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlv' }) }
+        let(:config) { super().merge({ 'cloud_id' => 'invalid:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlv' }) }
 
         it "should fail" do
           expect { plugin.register }.to raise_error LogStash::ConfigurationError, /cloud_id.*? is invalid/
@@ -336,7 +336,7 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       context 'hosts also set' do
-        let(:config) { super.merge({ 'cloud_id' => valid_cloud_id, 'hosts' => [ 'localhost:9200' ] }) }
+        let(:config) { super().merge({ 'cloud_id' => valid_cloud_id, 'hosts' => [ 'localhost:9200' ] }) }
 
         it "should fail" do
           expect { plugin.register }.to raise_error LogStash::ConfigurationError, /cloud_id and hosts/
@@ -345,7 +345,7 @@ describe LogStash::Filters::Elasticsearch do
     end if LOGSTASH_VERSION > '6.0'
 
     describe "cloud.auth" do
-      let(:config) { super.merge({ 'cloud_auth' => LogStash::Util::Password.new('elastic:my-passwd-00') }) }
+      let(:config) { super().merge({ 'cloud_auth' => LogStash::Util::Password.new('elastic:my-passwd-00') }) }
 
       it "should set authorization" do
         plugin.register
@@ -356,7 +356,7 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       context 'invalid' do
-        let(:config) { super.merge({ 'cloud_auth' => 'invalid-format' }) }
+        let(:config) { super().merge({ 'cloud_auth' => 'invalid-format' }) }
 
         it "should fail" do
           expect { plugin.register }.to raise_error LogStash::ConfigurationError, /cloud_auth.*? format/
@@ -364,7 +364,7 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       context 'user also set' do
-        let(:config) { super.merge({ 'cloud_auth' => 'elastic:my-passwd-00', 'user' => 'another' }) }
+        let(:config) { super().merge({ 'cloud_auth' => 'elastic:my-passwd-00', 'user' => 'another' }) }
 
         it "should fail" do
           expect { plugin.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
@@ -374,7 +374,7 @@ describe LogStash::Filters::Elasticsearch do
 
     describe "api_key" do
       context "without ssl" do
-        let(:config) { super.merge({ 'api_key' => LogStash::Util::Password.new('foo:bar') }) }
+        let(:config) { super().merge({ 'api_key' => LogStash::Util::Password.new('foo:bar') }) }
 
         it "should fail" do
           expect { plugin.register }.to raise_error LogStash::ConfigurationError, /api_key authentication requires SSL\/TLS/
@@ -382,7 +382,7 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       context "with ssl" do
-        let(:config) { super.merge({ 'api_key' => LogStash::Util::Password.new('foo:bar'), "ssl" => true }) }
+        let(:config) { super().merge({ 'api_key' => LogStash::Util::Password.new('foo:bar'), "ssl" => true }) }
 
         it "should set authorization" do
           plugin.register
@@ -393,7 +393,7 @@ describe LogStash::Filters::Elasticsearch do
         end
 
         context 'user also set' do
-          let(:config) { super.merge({ 'api_key' => 'foo:bar', 'user' => 'another' }) }
+          let(:config) { super().merge({ 'api_key' => 'foo:bar', 'user' => 'another' }) }
 
           it "should fail" do
             expect { plugin.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
@@ -404,7 +404,7 @@ describe LogStash::Filters::Elasticsearch do
 
     describe "proxy" do
       context 'valid' do
-        let(:config) { super.merge({ 'proxy' => 'http://localhost:1234' }) }
+        let(:config) { super().merge({ 'proxy' => 'http://localhost:1234' }) }
 
         it "should set proxy" do
           plugin.register
@@ -416,7 +416,7 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       context 'invalid' do
-        let(:config) { super.merge({ 'proxy' => '${A_MISSING_ENV_VAR:}' }) }
+        let(:config) { super().merge({ 'proxy' => '${A_MISSING_ENV_VAR:}' }) }
 
         it "should not set proxy" do
           plugin.register
