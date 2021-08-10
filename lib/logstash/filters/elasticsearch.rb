@@ -1,8 +1,9 @@
 # encoding: utf-8
 require "logstash/filters/base"
 require "logstash/namespace"
-require_relative "elasticsearch/client"
 require "logstash/json"
+require_relative "elasticsearch/client"
+require_relative "elasticsearch/patch"
 
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config_name "elasticsearch"

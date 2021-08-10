@@ -43,14 +43,14 @@ module LogStash
         return {} unless user && password && password.value
 
         token = ::Base64.strict_encode64("#{user}:#{password.value}")
-        { Authorization: "Basic #{token}" }
+        { 'Authorization' => "Basic #{token}" }
       end
 
       def setup_api_key(api_key)
         return {} unless (api_key && api_key.value)
 
         token = ::Base64.strict_encode64(api_key.value)
-        { Authorization: "ApiKey #{token}" }
+        { 'Authorization' => "ApiKey #{token}" }
       end
     end
   end
