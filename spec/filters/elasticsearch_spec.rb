@@ -318,7 +318,7 @@ describe LogStash::Filters::Elasticsearch do
       it "should set host(s)" do
         plugin.register
         client = plugin.send(:get_client).client
-        expect( client.transport.hosts ).to eql [{
+        expect( extract_transport(client).hosts ).to eql [{
                                                      :scheme => "https",
                                                      :host => "ac31ebb90241773157043c34fd26fd46.us-central1.gcp.cloud.es.io",
                                                      :port => 9243,

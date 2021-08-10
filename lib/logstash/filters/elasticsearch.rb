@@ -107,7 +107,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     fill_user_password_from_cloud_auth
     fill_hosts_from_cloud_id
 
-    @hosts = Array(@hosts)
+    @hosts = Array(@hosts).map { |host| host.to_s } # potential SafeURI#to_s
 
     test_connection!
   end # def register
@@ -267,6 +267,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def parse_host_uri_from_cloud_id(cloud_id)
+    require 'logstash/util/safe_uri'
     begin # might not be available on older LS
       require 'logstash/util/cloud_setting_id'
     rescue LoadError
