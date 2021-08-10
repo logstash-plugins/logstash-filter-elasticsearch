@@ -350,7 +350,7 @@ describe LogStash::Filters::Elasticsearch do
       it "should set authorization" do
         plugin.register
         client = plugin.send(:get_client).client
-        auth_header = client.transport.options[:transport_options][:headers][:Authorization]
+        auth_header = extract_transport(client).options[:transport_options][:headers][:Authorization]
 
         expect( auth_header ).to eql "Basic #{Base64.encode64('elastic:my-passwd-00').rstrip}"
       end
@@ -387,7 +387,7 @@ describe LogStash::Filters::Elasticsearch do
         it "should set authorization" do
           plugin.register
           client = plugin.send(:get_client).client
-          auth_header = client.transport.options[:transport_options][:headers][:Authorization]
+          auth_header = extract_transport(client).options[:transport_options][:headers][:Authorization]
 
           expect( auth_header ).to eql "ApiKey #{Base64.strict_encode64('foo:bar')}"
         end
@@ -409,7 +409,7 @@ describe LogStash::Filters::Elasticsearch do
         it "should set proxy" do
           plugin.register
           client = plugin.send(:get_client).client
-          proxy = client.transport.options[:transport_options][:proxy]
+          proxy = extract_transport(client).options[:transport_options][:proxy]
 
           expect( proxy ).to eql "http://localhost:1234"
         end
@@ -422,7 +422,7 @@ describe LogStash::Filters::Elasticsearch do
           plugin.register
           client = plugin.send(:get_client).client
 
-          expect( client.transport.options[:transport_options] ).to_not include(:proxy)
+          expect( extract_transport(client).options[:transport_options] ).to_not include(:proxy)
         end
       end
     end
@@ -453,4 +453,10 @@ describe LogStash::Filters::Elasticsearch do
       plugin.filter(LogStash::Event.new)
     end
   end
+
+  # @note can be removed once we depends on elasticsearch gem >= 6.x
+  def extract_transport(client) # on 7.x client.transport is a ES::Transport::Client
+    client.transport.respond_to?(:transport) ? client.transport.transport : client.transport
+  end
+
 end
