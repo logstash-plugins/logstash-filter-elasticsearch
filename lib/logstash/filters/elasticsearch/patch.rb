@@ -2,7 +2,8 @@
 require "elasticsearch"
 require "elasticsearch/transport/transport/http/manticore"
 
-if Gem.loaded_specs['elasticsearch-transport'].version < Gem::Version.new("8.0.0") # or whatever version fixes the issue
+es_client_version = Gem.loaded_specs['elasticsearch-transport'].version
+if es_client_version >= Gem::Version.new('7.2') && es_client_version < Gem::Version.new('7.15')
   module Elasticsearch
     module Transport
       module Transport
