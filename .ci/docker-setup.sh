@@ -16,7 +16,7 @@ pull_docker_snapshot() {
 
 if [ "$ELASTIC_STACK_VERSION" ]; then
     echo "Fetching versions from $VERSION_URL"
-    VERSIONS=$(curl --silent $VERSION_URL)
+    VERSIONS=$(curl -u elastic:$ELASTIC_PASSWORD --silent $VERSION_URL)
     if [[ "$SNAPSHOT" = "true" ]]; then
       ELASTIC_STACK_RETRIEVED_VERSION=$(echo $VERSIONS | jq '.snapshots."'"$ELASTIC_STACK_VERSION"'"')
       echo $ELASTIC_STACK_RETRIEVED_VERSION
