@@ -428,6 +428,20 @@ describe LogStash::Filters::Elasticsearch do
     end
   end
 
+  describe "defaults" do
+
+    let(:config) { Hash.new }
+    let(:plugin) { described_class.new(config) }
+
+    before { allow(plugin).to receive(:test_connection!) }
+
+    it "should set localhost:9200 as hosts" do
+      plugin.register
+      client = plugin.send(:get_client).client
+      expect( extract_transport(client).hosts ).to eql [{ :host => "localhost", :port => 9200, :protocol => "http"}]
+    end
+  end
+
   describe "query template" do
     let(:config) do
       {
