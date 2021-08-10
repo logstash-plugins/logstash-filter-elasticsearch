@@ -4,8 +4,6 @@ require "logstash/namespace"
 require_relative "elasticsearch/client"
 require "logstash/json"
 require "logstash/util/safe_uri"
-java_import "java.util.concurrent.ConcurrentHashMap"
-
 
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config_name "elasticsearch"
