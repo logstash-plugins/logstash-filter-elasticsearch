@@ -468,7 +468,7 @@ describe LogStash::Filters::Elasticsearch do
     end
   end
 
-  # @note can be removed once we depends on elasticsearch gem >= 6.x
+  # @note can be removed once gem depends on elasticsearch >= 6.x
   def extract_transport(client) # on 7.x client.transport is a ES::Transport::Client
     client.transport.respond_to?(:transport) ? client.transport.transport : client.transport
   end
