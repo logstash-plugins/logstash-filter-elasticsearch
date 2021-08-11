@@ -24,7 +24,7 @@ module LogStash
         logger.warn "Supplied proxy setting (proxy => '') has no effect" if @proxy.eql?('')
         transport_options[:proxy] = proxy.to_s if proxy && !proxy.eql?('')
 
-        hosts.map! {|h| { host: h, scheme: 'https' } } if ssl
+        hosts = hosts.map { |host| { host: host, scheme: 'https' } } if ssl
         # set ca_file even if ssl isn't on, since the host can be an https url
         ssl_options = { ssl: true, ca_file: options[:ca_file] } if options[:ca_file]
         ssl_options ||= {}
