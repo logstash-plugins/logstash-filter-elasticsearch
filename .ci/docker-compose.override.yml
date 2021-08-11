@@ -20,7 +20,7 @@ services:
     environment:
       - ELASTIC_PASSWORD=$ELASTIC_PASSWORD # not supported in ES image 6.8
       - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms250m -Xmx1000m
+      - ES_JAVA_OPTS=-Xms250m -Xmx800m
     tty: true
     ports:
       - "9200:9200"
