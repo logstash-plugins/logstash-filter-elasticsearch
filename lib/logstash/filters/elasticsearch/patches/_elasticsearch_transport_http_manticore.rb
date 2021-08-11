@@ -4,6 +4,10 @@ require "elasticsearch/transport/transport/http/manticore"
 
 es_client_version = Gem.loaded_specs['elasticsearch-transport'].version
 if es_client_version >= Gem::Version.new('7.2') && es_client_version < Gem::Version.new('7.15')
+  # elasticsearch-transport 7.2.0 - 7.14.0 had a bug where setting http headers
+  #   ES::Client.new ..., transport_options: { headers: { 'Authorization' => ... } }
+  # would be lost https://github.com/elastic/elasticsearch-ruby/issues/1428
+  # @private
   module Elasticsearch
     module Transport
       module Transport

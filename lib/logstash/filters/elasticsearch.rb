@@ -3,7 +3,7 @@ require "logstash/filters/base"
 require "logstash/namespace"
 require "logstash/json"
 require_relative "elasticsearch/client"
-require_relative "elasticsearch/patch"
+require_relative "elasticsearch/patches/_elasticsearch_transport_http_manticore"
 
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config_name "elasticsearch"
