@@ -7,8 +7,8 @@ module ESHelper
     end
   end
 
-  def self.get_client
-    Elasticsearch::Client.new(:hosts => [get_host_port])
+  def self.get_client(credentials)
+    Elasticsearch::Client.new(credentials.merge :hosts => [get_host_port])
   end
 
   def self.doc_type
