@@ -21,10 +21,17 @@ services:
     environment:
       - ELASTIC_PASSWORD=$ELASTIC_PASSWORD
       - xpack.security.enabled=${ELASTIC_SECURITY_ENABLED:-false}
+      - bootstrap.memory_lock=true
       - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms250m -Xmx800m
+      - ES_JAVA_OPTS=-Xms640m -Xmx640m
     tty: true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     ports:
       - "9200:9200"
     user: elasticsearch
 
+
+# bundle exec rspec -fd --tag integration --tag es_version:6.8.18 spec/filters/integration
