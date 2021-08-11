@@ -7,6 +7,9 @@ if es_client_version >= Gem::Version.new('7.2') && es_client_version < Gem::Vers
   # elasticsearch-transport 7.2.0 - 7.14.0 had a bug where setting http headers
   #   ES::Client.new ..., transport_options: { headers: { 'Authorization' => ... } }
   # would be lost https://github.com/elastic/elasticsearch-ruby/issues/1428
+  #
+  # NOTE: needs to be idempotent as input ES plugin might apply the same patch!
+  #
   # @private
   module Elasticsearch
     module Transport
