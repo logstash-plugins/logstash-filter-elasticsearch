@@ -1,3 +1,9 @@
+## 3.9.4
+  - Fix: a regression (in LS 7.14.0) where due the elasticsearch client update (from 5.0.5 to 7.5.0) the `Authorization` 
+    header isn't passed, this leads to the plugin not being able to leverage `user`/`password` credentials set by the user.
+    [#148](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/148)
+  - Fix: default setting for hosts not working (since 3.7.0)
+
 ## 3.9.3
   - [DOC] Update links to use shared attributes [#144](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/144)
 
