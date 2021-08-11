@@ -19,7 +19,7 @@ services:
         - INTEGRATION=${INTEGRATION:-false}
         - SECURE_INTEGRATION=${SECURE_INTEGRATION:-false}
     environment:
-      - ELASTIC_PASSWORD=$ELASTIC_PASSWORD # not supported in ES image 6.8
+      - ELASTIC_PASSWORD=$ELASTIC_PASSWORD
       - xpack.security.enabled=${ELASTIC_SECURITY_ENABLED:-false}
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms250m -Xmx800m
