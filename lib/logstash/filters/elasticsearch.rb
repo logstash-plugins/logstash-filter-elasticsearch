@@ -1,19 +1,15 @@
 # encoding: utf-8
 require "logstash/filters/base"
 require "logstash/namespace"
-require_relative "elasticsearch/client"
 require "logstash/json"
-require "logstash/util/safe_uri"
-java_import "java.util.concurrent.ConcurrentHashMap"
-
+require_relative "elasticsearch/client"
+require_relative "elasticsearch/patches/_elasticsearch_transport_http_manticore"
 
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config_name "elasticsearch"
 
-  DEFAULT_HOST = ::LogStash::Util::SafeURI.new("//localhost:9200")
-
   # List of elasticsearch hosts to use for querying.
-  config :hosts, :validate => :array, :default => [ DEFAULT_HOST ]
+  config :hosts, :validate => :array, :default => [ 'localhost:9200' ]
 
   # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices.
   # Field substitution (e.g. `index-name-%{date_field}`) is available
@@ -112,7 +108,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     fill_user_password_from_cloud_auth
     fill_hosts_from_cloud_id
 
-    @hosts = Array(@hosts).map { |host| host.to_s } # for ES client URI#to_s
+    @hosts = Array(@hosts).map { |host| host.to_s } # potential SafeURI#to_s
 
     test_connection!
   end # def register
@@ -120,7 +116,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   def filter(event)
     matched = false
     begin
-      params = {:index => event.sprintf(@index) }
+      params = { :index => event.sprintf(@index) }
 
       if @query_dsl
         query = LogStash::Json.load(event.sprintf(@query_dsl))
@@ -237,8 +233,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def hosts_default?(hosts)
-    # NOTE: would be nice if pipeline allowed us a clean way to detect a config default :
-    hosts.is_a?(Array) && hosts.size == 1 && hosts.first.equal?(DEFAULT_HOST)
+    hosts.is_a?(Array) && hosts.size == 1 && !original_params.key?('hosts')
   end
 
   def validate_authentication
@@ -273,6 +268,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def parse_host_uri_from_cloud_id(cloud_id)
+    require 'logstash/util/safe_uri'
     begin # might not be available on older LS
       require 'logstash/util/cloud_setting_id'
     rescue LoadError
