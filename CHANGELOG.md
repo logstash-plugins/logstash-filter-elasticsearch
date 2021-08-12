@@ -1,5 +1,8 @@
+## next
+  - [DOC] Added examples for using space delimited strings for `hosts` option [#149](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/149)
+
 ## 3.9.3
-  - [DOC] Update links to use shared attributes [#144](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/144)
+  - [DOC] Updated links to use shared attributes [#144](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/144)
 
 ## 3.9.2
   - [DOC] Fixed links to restructured Logstash-to-cloud docs [#142](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/142)
