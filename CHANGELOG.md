@@ -1,3 +1,6 @@
+## 3.9.5
+  - Fixed SSL handshake hang indefinitely with proxy setup
+
 ## 3.9.4
   - Fix: a regression (in LS 7.14.0) where due the elasticsearch client update (from 5.0.5 to 7.5.0) the `Authorization` 
     header isn't passed, this leads to the plugin not being able to leverage `user`/`password` credentials set by the user.
