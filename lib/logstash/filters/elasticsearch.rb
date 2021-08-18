@@ -320,6 +320,10 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def test_connection!
-    get_client.client.ping
+    begin
+      get_client.client.ping
+    rescue Elasticsearch::UnsupportedProductError
+      raise LogStash::ConfigurationError, "Not a valid Elasticsearch"
+    end
   end
 end #class LogStash::Filters::Elasticsearch
