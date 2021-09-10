@@ -3,6 +3,9 @@ require "logstash/devutils/rspec/spec_helper"
 require "logstash/plugin"
 require "logstash/filters/elasticsearch"
 require "logstash/json"
+require "cabin"
+require "webrick"
+require "uri"
 
 describe LogStash::Filters::Elasticsearch do
 
@@ -288,6 +291,117 @@ describe LogStash::Filters::Elasticsearch do
         expect(event.get("ip_address")).to eq("66.249.73.185")
       end
 
+    end
+  end
+
+  class StoppableServer
+
+    attr_reader :port
+
+    def initialize()
+      @port = 9200 #rand(65535-1024) + 1025
+      queue = Queue.new
+      @first_req_waiter = java.util.concurrent.CountDownLatch.new(1)
+      @first_request = nil
+
+      @t = java.lang.Thread.new(
+        proc do
+          begin
+            @server = WEBrick::HTTPServer.new :Port => @port, :DocumentRoot => ".",
+                     :Logger => Cabin::Channel.get, # silence WEBrick logging
+                     :StartCallback => Proc.new {
+                           queue.push("started")
+                         }
+            @server.mount_proc '/' do |req, res|
+              res.body = '''
+              {
+                  "name": "ce7ccfb438e8",
+                  "cluster_name": "docker-cluster",
+                  "cluster_uuid": "DyR1hN03QvuCWXRy3jtb0g",
+                  "version": {
+                      "number": "7.13.1",
+                      "build_flavor": "default",
+                      "build_type": "docker",
+                      "build_hash": "9a7758028e4ea59bcab41c12004603c5a7dd84a9",
+                      "build_date": "2021-05-28T17:40:59.346932922Z",
+                      "build_snapshot": false,
+                      "lucene_version": "8.8.2",
+                      "minimum_wire_compatibility_version": "6.8.0",
+                      "minimum_index_compatibility_version": "6.0.0-beta1"
+                  },
+                  "tagline": "You Know, for Search"
+              }
+              '''
+              res.status = 200
+              res['Content-Type'] = 'application/json'
+              @first_request = req
+              @first_req_waiter.countDown()
+            end
+
+            @server.start
+          rescue => e
+            puts "Error in webserver thread #{e}"
+            # ignore
+          end
+        end
+      )
+      @t.daemon = true
+      @t.start
+      queue.pop # blocks until the server is up
+    end
+
+    def stop
+      @server.shutdown
+    end
+
+    def wait_receive_request
+      @first_req_waiter.await(2, java.util.concurrent.TimeUnit::SECONDS)
+      @first_request
+    end
+  end
+
+  describe "user-agent header" do
+    let!(:webserver) { StoppableServer.new } # webserver must be started before the call, so no lazy "let"
+
+    after :each do
+      webserver.stop
+    end
+
+    it "server should be started" do
+      require 'net/http'
+      response = nil
+      Net::HTTP.start('localhost', webserver.port) {|http|
+        response = http.request_get('/')
+      }
+      expect(response.code.to_i).to eq(200)
+    end
+
+    context "used by plugin" do
+      let(:config) do
+        {
+          "hosts" => ["localhost:9200"],
+          "query" => "response: 404",
+          "fields" => { "response" => "code" },
+          "docinfo_fields" => { "_index" => "es_index" },
+          "aggregation_fields" => { "bytes_avg" => "bytes_avg_ls_field" }
+        }
+      end
+      let(:plugin) { described_class.new(config) }
+      let(:event)  { LogStash::Event.new({}) }
+
+      it "client should sent the expect user-agent" do
+        plugin.register
+
+        # control test
+#         tmp_client = ::Elasticsearch::Client.new(hosts: ["http://localhost:9200"], transport_options: {:headers => {'user-agent' => "Abracadabra"}},
+#                     transport_class: ::Elasticsearch::Transport::Transport::HTTP::Manticore)
+#         tmp_client.ping
+
+        request = webserver.wait_receive_request
+
+        expect(request.header['user-agent']).to include(plugin.prepare_user_agent)
+#         expect(request.header['user-agent']).to include("Logstash/8.0.0 (OS=Linux-5.4.0-84-generic-amd64; JVM=AdoptOpenJDK-11.0.11) logstash-filter-elasticsearch/3.9.5")
+      end
     end
   end
 

@@ -23,6 +23,8 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "logstash-core-plugin-api", ">= 1.60", "<= 2.99"
   s.add_runtime_dependency 'elasticsearch', ">= 5.0.5" # LS >= 6.7 and < 7.14 all used version 5.0.5
   s.add_runtime_dependency 'manticore', ">= 0.7.1"
+  s.add_development_dependency 'cabin', ['~> 0.6']
+  s.add_development_dependency 'webrick'
 
   s.add_development_dependency 'logstash-devutils'
 end
