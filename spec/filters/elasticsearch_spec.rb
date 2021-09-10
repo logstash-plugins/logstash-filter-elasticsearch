@@ -392,15 +392,10 @@ describe LogStash::Filters::Elasticsearch do
       it "client should sent the expect user-agent" do
         plugin.register
 
-        # control test
-#         tmp_client = ::Elasticsearch::Client.new(hosts: ["http://localhost:9200"], transport_options: {:headers => {'user-agent' => "Abracadabra"}},
-#                     transport_class: ::Elasticsearch::Transport::Transport::HTTP::Manticore)
-#         tmp_client.ping
-
         request = webserver.wait_receive_request
 
-        expect(request.header['user-agent']).to include(plugin.prepare_user_agent)
-#         expect(request.header['user-agent']).to include("Logstash/8.0.0 (OS=Linux-5.4.0-84-generic-amd64; JVM=AdoptOpenJDK-11.0.11) logstash-filter-elasticsearch/3.9.5")
+        expect(request.header['user-agent'].size).to eq(1)
+        expect(request.header['user-agent'][0]).to match(/Logstash\/\d*\.\d*\.\d* \(OS=.*; JVM=.*\) logstash-filter-elasticsearch\/\d*\.\d*\.\d*/)
       end
     end
   end
