@@ -1,3 +1,6 @@
+## 3.10.0
+  - Feat: add user-agent header passed to the Elasticsearch HTTP connection [#152](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/152)
+
 ## 3.9.5
   - Fixed SSL handshake hang indefinitely with proxy setup [#151](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/151)
 
