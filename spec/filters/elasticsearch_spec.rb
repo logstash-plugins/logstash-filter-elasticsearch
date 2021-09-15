@@ -299,7 +299,6 @@ describe LogStash::Filters::Elasticsearch do
     attr_reader :port
 
     def initialize()
-      @port = 9200 #rand(65535-1024) + 1025
       queue = Queue.new
       @first_req_waiter = java.util.concurrent.CountDownLatch.new(1)
       @first_request = nil
@@ -307,11 +306,12 @@ describe LogStash::Filters::Elasticsearch do
       @t = java.lang.Thread.new(
         proc do
           begin
-            @server = WEBrick::HTTPServer.new :Port => @port, :DocumentRoot => ".",
+            @server = WEBrick::HTTPServer.new :Port => 0, :DocumentRoot => ".",
                      :Logger => Cabin::Channel.get, # silence WEBrick logging
                      :StartCallback => Proc.new {
                            queue.push("started")
                          }
+            @port = @server.config[:Port]
             @server.mount_proc '/' do |req, res|
               res.body = '''
               {
@@ -379,7 +379,7 @@ describe LogStash::Filters::Elasticsearch do
     context "used by plugin" do
       let(:config) do
         {
-          "hosts" => ["localhost:9200"],
+          "hosts" => ["localhost:#{webserver.port}"],
           "query" => "response: 404",
           "fields" => { "response" => "code" },
           "docinfo_fields" => { "_index" => "es_index" },
@@ -395,7 +395,7 @@ describe LogStash::Filters::Elasticsearch do
         request = webserver.wait_receive_request
 
         expect(request.header['user-agent'].size).to eq(1)
-        expect(request.header['user-agent'][0]).to match(/Logstash\/\d*\.\d*\.\d* \(OS=.*; JVM=.*\) logstash-filter-elasticsearch\/\d*\.\d*\.\d*/)
+        expect(request.header['user-agent'][0]).to match(/logstash\/\d*\.\d*\.\d* \(OS=.*; JVM=.*\) logstash-filter-elasticsearch\/\d*\.\d*\.\d*/)
       end
     end
   end
