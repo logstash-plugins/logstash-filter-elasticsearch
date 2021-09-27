@@ -176,6 +176,19 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     end
   end # def filter
 
+  # public only to be reuse in testing
+  def prepare_user_agent
+    os_name = java.lang.System.getProperty('os.name')
+    os_version = java.lang.System.getProperty('os.version')
+    os_arch = java.lang.System.getProperty('os.arch')
+    jvm_vendor = java.lang.System.getProperty('java.vendor')
+    jvm_version = java.lang.System.getProperty('java.version')
+
+    plugin_version = Gem.loaded_specs['logstash-filter-elasticsearch'].version
+    # example: logstash/7.14.1 (OS=Linux-5.4.0-84-generic-amd64; JVM=AdoptOpenJDK-11.0.11) logstash-output-elasticsearch/11.0.1
+    "logstash/#{LOGSTASH_VERSION} (OS=#{os_name}-#{os_version}-#{os_arch}; JVM=#{jvm_vendor}-#{jvm_version}) logstash-#{@plugin_type}-#{config_name}/#{plugin_version}"
+  end
+
   private
 
   def client_options
@@ -192,7 +205,11 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   def new_client
     # NOTE: could pass cloud-id/cloud-auth to client but than we would need to be stricter on ES version requirement
     # and also LS parsing might differ from ES client's parsing so for consistency we do not pass cloud options ...
-    LogStash::Filters::ElasticsearchClient.new(@logger, @hosts, client_options)
+    opts = client_options
+
+    opts[:user_agent] = prepare_user_agent
+
+    LogStash::Filters::ElasticsearchClient.new(@logger, @hosts, opts)
   end
 
   def get_client

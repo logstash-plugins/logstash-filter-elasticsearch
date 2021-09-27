@@ -16,10 +16,12 @@ module LogStash
         password = options.fetch(:password, nil)
         api_key = options.fetch(:api_key, nil)
         proxy = options.fetch(:proxy, nil)
+        user_agent = options[:user_agent]
 
         transport_options = {:headers => {}}
         transport_options[:headers].merge!(setup_basic_auth(user, password))
         transport_options[:headers].merge!(setup_api_key(api_key))
+        transport_options[:headers].merge!({ 'user-agent' => "#{user_agent}" })
 
         logger.warn "Supplied proxy setting (proxy => '') has no effect" if @proxy.eql?('')
         transport_options[:proxy] = proxy.to_s if proxy && !proxy.eql?('')
