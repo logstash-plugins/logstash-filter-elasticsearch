@@ -12,12 +12,34 @@ describe LogStash::Filters::Elasticsearch do
   context "registration" do
 
     let(:plugin) { LogStash::Plugin.lookup("filter", "elasticsearch").new({}) }
-    before do
-      allow(plugin).to receive(:test_connection!)
+
+    context "against authentic Elasticsearch" do
+      before do
+        allow(plugin).to receive(:test_connection!)
+      end
+      
+      it "should not raise an exception" do
+        expect {plugin.register}.to_not raise_error
+      end
     end
 
-    it "should not raise an exception" do
-      expect {plugin.register}.to_not raise_error
+    context "against not authentic Elasticsearch" do
+      let(:failing_client) do
+        client = double("client")
+        allow(client).to receive(:ping).and_raise Elasticsearch::UnsupportedProductError
+
+        client_wrapper = double("filter_client")
+        allow(client_wrapper).to receive(:client).and_return client
+        client_wrapper
+      end
+
+      before do
+        allow(plugin).to receive(:get_client).and_return(failing_client)
+      end
+
+      it "should raise ConfigurationError" do
+        expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
+      end
     end
   end
 

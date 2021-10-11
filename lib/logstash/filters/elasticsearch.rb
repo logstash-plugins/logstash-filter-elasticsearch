@@ -320,6 +320,10 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def test_connection!
-    get_client.client.ping
+    begin
+      get_client.client.ping
+    rescue Elasticsearch::UnsupportedProductError
+      raise LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch"
+    end
   end
 end #class LogStash::Filters::Elasticsearch

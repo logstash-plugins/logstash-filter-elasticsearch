@@ -1,3 +1,6 @@
+## 3.11.0
+  - Feat: update Elasticsearch client to 7.14.0 [#150](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/150)
+
 ## 3.10.0
   - Feat: add user-agent header passed to the Elasticsearch HTTP connection [#152](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/152)
 
