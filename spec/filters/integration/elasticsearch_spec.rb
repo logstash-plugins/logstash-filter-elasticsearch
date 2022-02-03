@@ -69,7 +69,7 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
       super().reject { |key, _| key == 'password' }
     end
 
-    it "should enhance the current event with new data" do
+    it "fails to register plugin" do
       expect { plugin.register }.to raise_error Elasticsearch::Transport::Transport::Errors::Unauthorized
     end
 
