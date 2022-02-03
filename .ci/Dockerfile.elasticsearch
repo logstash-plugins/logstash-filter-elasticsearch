@@ -8,7 +8,7 @@ ARG ES_SSL_SUPPORTED_PROTOCOLS
 
 RUN rm -f $es_path/config/scripts
 
-COPY --chown=elasticsearch:elasticsearch spec/fixtures/test_certs/* $es_path/config/test_certs/
+COPY --chown=elasticsearch:elasticsearch spec/filters/fixtures/test_certs/* $es_path/config/test_certs/
 
 RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.enabled: true" >> $es_yml; fi
 RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.key: $es_path/config/test_certs/es.key" >> $es_yml; fi
