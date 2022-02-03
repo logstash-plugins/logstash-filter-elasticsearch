@@ -5,11 +5,13 @@ services:
   logstash:
     command: /usr/share/plugins/plugin/.ci/logstash-run.sh
     environment:
+        - ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
         - INTEGRATION=${INTEGRATION:-false}
         - SECURE_INTEGRATION=${SECURE_INTEGRATION:-false}
-        - ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
         - ELASTIC_SECURITY_ENABLED=$ELASTIC_SECURITY_ENABLED
         - ELASTIC_PASSWORD=$ELASTIC_PASSWORD
+        - ES_SSL_SUPPORTED_PROTOCOLS=$ES_SSL_SUPPORTED_PROTOCOLS
+
   elasticsearch:
     build:
       context: ../
@@ -18,6 +20,7 @@ services:
         - ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
         - INTEGRATION=${INTEGRATION:-false}
         - SECURE_INTEGRATION=${SECURE_INTEGRATION:-false}
+        - ES_SSL_SUPPORTED_PROTOCOLS=$ES_SSL_SUPPORTED_PROTOCOLS
     environment:
       - ELASTIC_PASSWORD=$ELASTIC_PASSWORD
       - xpack.security.enabled=${ELASTIC_SECURITY_ENABLED:-false}
