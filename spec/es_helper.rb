@@ -12,7 +12,9 @@ module ESHelper
     host, port = get_host_port.split(':')
     host_opts = credentials.inject({}) { |h, (k, v)| h[k.to_sym] = v; h } # user: _, password: _
     host_opts.merge! host: host, port: port, scheme: (secure ? 'https' : 'http')
-    Elasticsearch::Client.new(hosts: [host_opts], transport_class: Elasticsearch::Transport::Transport::HTTP::Faraday)
+    Elasticsearch::Client.new(hosts: [host_opts],
+                              transport_class: Elasticsearch::Transport::Transport::HTTP::Faraday,
+                              ssl: { verify: :disable })
   end
 
   def self.doc_type
