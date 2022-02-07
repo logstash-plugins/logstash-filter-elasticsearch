@@ -31,16 +31,18 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
   let(:event)  { LogStash::Event.new({}) }
 
   before(:each) do
-    @es = ESHelper.get_client(ELASTIC_SECURITY_ENABLED ? credentials : {}, SECURE_INTEGRATION)
-    # Delete all templates first.
+    es_url = ESHelper.get_host_port
+    es_url = SECURE_INTEGRATION ? "https://#{es_url}" : "http://#{es_url}"
+    args = ELASTIC_SECURITY_ENABLED ? "-u #{credentials['user']}:#{credentials['password']}" : ''
     # Clean ES of data before we start.
-    @es.indices.delete_template(:name => "*")
+    # Delete all templates first.
+    ESHelper.curl_and_get_json_response "#{es_url}/_index_template/*", method: 'DELETE', args: args
     # This can fail if there are no indexes, ignore failure.
-    @es.indices.delete(:index => "*") rescue nil
+    ESHelper.curl_and_get_json_response "#{es_url}/_index/*", method: 'DELETE', args: args
+    json_args = "-H 'Content-Type: application/json' -d '{\"response\": 404, \"this\":\"that\"}'"
     10.times do
-      ESHelper.index_doc(@es, :index => 'logs', :body => { :response => 404, :this => 'that'})
+      ESHelper.curl_and_get_json_response "#{es_url}/logs/_doc", method: 'POST', args: args + json_args
     end
-    @es.indices.refresh
   end
 
   it "should enhance the current event with new data" do
