@@ -3,11 +3,16 @@ set -ex
 
 export PATH=$BUILD_DIR/gradle/bin:$PATH
 
+CURL_OPTS="-k --tlsv1.2"
+
 wait_for_es() {
   echo "Waiting for elasticsearch to respond..."
   es_url="http://elasticsearch:9200"
+  if [[ "$SECURE_INTEGRATION" == "true" ]]; then
+    es_url="https://elasticsearch:9200"
+  fi
   count=120
-  while ! curl -u elastic:$ELASTIC_PASSWORD --silent $es_url && [[ $count -ne 0 ]]; do
+  while ! curl $CURL_OPTS -u elastic:$ELASTIC_PASSWORD --silent $es_url && [[ $count -ne 0 ]]; do
     count=$(( $count - 1 ))
     [[ $count -eq 0 ]] && return 1
     sleep 1
