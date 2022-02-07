@@ -43,6 +43,7 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
     10.times do
       ESHelper.curl_and_get_json_response "#{es_url}/logs/_doc", method: 'POST', args: args + json_args
     end
+    ESHelper.curl_and_get_json_response "#{es_url}/_refresh", method: 'POST', args: args
   end
 
   it "should enhance the current event with new data" do
