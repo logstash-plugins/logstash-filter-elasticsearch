@@ -7,11 +7,12 @@ require_relative "../../../spec/es_helper"
 describe LogStash::Filters::Elasticsearch, :integration => true do
 
   ELASTIC_SECURITY_ENABLED = ENV['ELASTIC_SECURITY_ENABLED'].eql? 'true'
+  SECURE_INTEGRATION = ENV['SECURE_INTEGRATION'].eql? 'true'
 
   let(:base_config) do
     {
         "index" => 'logs',
-        "hosts" => [ESHelper.get_host_port],
+        "hosts" => ["http#{SECURE_INTEGRATION ? 's' : nil}://#{ESHelper.get_host_port}"],
         "query" => "response: 404",
         "sort" => "response",
         "fields" => [ ["response", "code"] ],
@@ -30,7 +31,7 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
   let(:event)  { LogStash::Event.new({}) }
 
   before(:each) do
-    @es = ESHelper.get_client(ELASTIC_SECURITY_ENABLED ? credentials : {})
+    @es = ESHelper.get_client(ELASTIC_SECURITY_ENABLED ? credentials : {}, SECURE_INTEGRATION)
     # Delete all templates first.
     # Clean ES of data before we start.
     @es.indices.delete_template(:name => "*")

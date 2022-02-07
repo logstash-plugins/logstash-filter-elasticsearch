@@ -7,11 +7,11 @@ module ESHelper
     end
   end
 
-  def self.get_client(credentials)
+  def self.get_client(credentials, secure)
     require 'elasticsearch/transport/transport/http/faraday' # supports user/password options
     host, port = get_host_port.split(':')
     host_opts = credentials.inject({}) { |h, (k, v)| h[k.to_sym] = v; h } # user: _, password: _
-    host_opts.merge! host: host, port: port, scheme: 'http'
+    host_opts.merge! host: host, port: port, scheme: (secure ? 'https' : 'http')
     Elasticsearch::Client.new(hosts: [host_opts], transport_class: Elasticsearch::Transport::Transport::HTTP::Faraday)
   end
 
