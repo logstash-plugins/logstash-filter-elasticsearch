@@ -28,7 +28,13 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
   end
 
   let(:config) do
-    ELASTIC_SECURITY_ENABLED ? base_config.merge(credentials) : base_config
+    config = ELASTIC_SECURITY_ENABLED ? base_config.merge(credentials) : base_config
+    config = { 'ca_file' => ca_path }.merge(config) if SECURE_INTEGRATION
+    config
+  end
+
+  let(:ca_path) do
+    File.expand_path('../fixtures/test_certs/ca.crt', File.dirname(__FILE__))
   end
 
   let(:plugin) { described_class.new(config) }
