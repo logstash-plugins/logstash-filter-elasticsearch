@@ -9,6 +9,10 @@ require "uri"
 
 describe LogStash::Filters::Elasticsearch do
 
+  subject(:plugin) { described_class.new(config) }
+
+  let(:event)  { LogStash::Event.new({}) }
+
   context "registration" do
 
     let(:plugin) { LogStash::Plugin.lookup("filter", "elasticsearch").new({}) }
@@ -53,8 +57,6 @@ describe LogStash::Filters::Elasticsearch do
         "aggregation_fields" => { "bytes_avg" => "bytes_avg_ls_field" }
       }
     end
-    let(:plugin) { described_class.new(config) }
-    let(:event)  { LogStash::Event.new({}) }
 
     let(:response) do
       LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_x_1.json")))
@@ -569,7 +571,9 @@ describe LogStash::Filters::Elasticsearch do
     it "should set localhost:9200 as hosts" do
       plugin.register
       client = plugin.send(:get_client).client
-      expect( extract_transport(client).hosts ).to eql [{ :host => "localhost", :port => 9200, :protocol => "http"}]
+      hosts = extract_transport(client).hosts
+      expect( hosts.size ).to be 1
+      expect( hosts[0] ).to include(:host => "localhost", :port => 9200, :scheme => "http")
     end
   end
 

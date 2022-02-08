@@ -95,4 +95,17 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
 
   end if ELASTIC_SECURITY_ENABLED
 
+  context 'setting host:port (and ssl)' do # reproduces GH-155
+
+    let(:config) do
+      super().merge "hosts" => [ESHelper.get_host_port], "ssl" => SECURE_INTEGRATION
+    end
+
+    it "works" do
+      expect { plugin.register }.to_not raise_error
+      plugin.filter(event)
+    end
+
+  end
+
 end

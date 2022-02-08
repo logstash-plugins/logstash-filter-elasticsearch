@@ -26,7 +26,7 @@ module LogStash
         logger.warn "Supplied proxy setting (proxy => '') has no effect" if @proxy.eql?('')
         transport_options[:proxy] = proxy.to_s if proxy && !proxy.eql?('')
 
-        hosts = hosts.map { |host| { host: host, scheme: 'https' } } if ssl
+        hosts = setup_hosts(hosts, ssl)
         # set ca_file even if ssl isn't on, since the host can be an https url
         ssl_options = { ssl: true, ca_file: options[:ca_file] } if options[:ca_file]
         ssl_options ||= {}
@@ -40,6 +40,17 @@ module LogStash
       end
 
       private
+
+      def setup_hosts(hosts, ssl)
+        hosts.map do |h|
+          if h.start_with?('http:/', 'https:/')
+            h
+          else
+            host, port = h.split(':')
+            { host: host, port: port, scheme: (ssl ? 'https' : 'http') }
+          end
+        end
+      end
 
       def setup_basic_auth(user, password)
         return {} unless user && password && password.value
