@@ -72,9 +72,6 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
 
     it "should enhance the current event with new data" do
       plugin.filter(event)
-
-      p event.to_hash
-
       expect(event.get("code")).to eq([404]*10)
     end
 
