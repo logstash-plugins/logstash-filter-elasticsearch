@@ -20,7 +20,11 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
   end
 
   let(:credentials) do
-    { 'user' => 'elastic', 'password' => ENV['ELASTIC_PASSWORD'] }
+    if SECURE_INTEGRATION
+      { 'user' => 'tests', 'password' => 'Tests123' } # added user
+    else
+      { 'user' => 'elastic', 'password' => ENV['ELASTIC_PASSWORD'] }
+    end
   end
 
   let(:config) do
