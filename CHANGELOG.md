@@ -1,3 +1,6 @@
+## 3.11.1
+  -  Fix: hosts => "es_host:port" regression [#156](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/156)
+
 ## 3.11.0
   - Feat: update Elasticsearch client to 7.14.0 [#150](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/150)
 

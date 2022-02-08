@@ -3,5 +3,19 @@ FROM docker.elastic.co/elasticsearch/elasticsearch$distribution_suffix:$ELASTIC_
 
 ARG es_path=/usr/share/elasticsearch
 ARG es_yml=$es_path/config/elasticsearch.yml
+ARG SECURE_INTEGRATION
+ARG ES_SSL_SUPPORTED_PROTOCOLS
 
 RUN rm -f $es_path/config/scripts
+
+COPY --chown=elasticsearch:elasticsearch spec/filters/fixtures/test_certs/* $es_path/config/test_certs/
+
+RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.enabled: true" >> $es_yml; fi
+RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.key: $es_path/config/test_certs/es.key" >> $es_yml; fi
+RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.certificate: $es_path/config/test_certs/es.crt" >> $es_yml; fi
+RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.certificate_authorities: [ '$es_path/config/test_certs/ca.crt' ]" >> $es_yml; fi
+RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then echo "xpack.security.http.ssl.verification_mode: certificate" >> $es_yml; fi
+
+RUN cat $es_yml
+
+RUN if [ "$SECURE_INTEGRATION" = "true" ] ; then $es_path/bin/elasticsearch-users useradd tests -p Tests123 -r superuser; fi
