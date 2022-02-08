@@ -43,9 +43,9 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
     ESHelper.curl_and_get_json_response "#{es_url}/_index_template/*", method: 'DELETE', args: args
     # This can fail if there are no indexes, ignore failure.
     ESHelper.curl_and_get_json_response "#{es_url}/_index/*", method: 'DELETE', args: args
-    json_args = "-H 'Content-Type: application/json' -d '{\"response\": 404, \"this\":\"that\"}'"
+    doc_args = "#{args} -H 'Content-Type: application/json' -d '{\"response\": 404, \"this\":\"that\"}'"
     10.times do
-      ESHelper.curl_and_get_json_response "#{es_url}/logs/_doc", method: 'POST', args: args + json_args
+      ESHelper.curl_and_get_json_response "#{es_url}/logs/_doc", method: 'POST', args: doc_args
     end
     ESHelper.curl_and_get_json_response "#{es_url}/_refresh", method: 'POST', args: args
   end
