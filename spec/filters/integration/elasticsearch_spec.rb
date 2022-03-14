@@ -7,11 +7,12 @@ require_relative "../../../spec/es_helper"
 describe LogStash::Filters::Elasticsearch, :integration => true do
 
   ELASTIC_SECURITY_ENABLED = ENV['ELASTIC_SECURITY_ENABLED'].eql? 'true'
+  SECURE_INTEGRATION = ENV['SECURE_INTEGRATION'].eql? 'true'
 
   let(:base_config) do
     {
         "index" => 'logs',
-        "hosts" => [ESHelper.get_host_port],
+        "hosts" => ["http#{SECURE_INTEGRATION ? 's' : nil}://#{ESHelper.get_host_port}"],
         "query" => "response: 404",
         "sort" => "response",
         "fields" => [ ["response", "code"] ],
@@ -19,27 +20,40 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
   end
 
   let(:credentials) do
-    { 'user' => 'elastic', 'password' => ENV['ELASTIC_PASSWORD'] }
+    if SECURE_INTEGRATION
+      { 'user' => 'tests', 'password' => 'Tests123' } # added user
+    else
+      { 'user' => 'elastic', 'password' => ENV['ELASTIC_PASSWORD'] }
+    end
   end
 
   let(:config) do
-    ELASTIC_SECURITY_ENABLED ? base_config.merge(credentials) : base_config
+    config = ELASTIC_SECURITY_ENABLED ? base_config.merge(credentials) : base_config
+    config = { 'ca_file' => ca_path }.merge(config) if SECURE_INTEGRATION
+    config
+  end
+
+  let(:ca_path) do
+    File.expand_path('../fixtures/test_certs/ca.crt', File.dirname(__FILE__))
   end
 
   let(:plugin) { described_class.new(config) }
   let(:event)  { LogStash::Event.new({}) }
 
   before(:each) do
-    @es = ESHelper.get_client(ELASTIC_SECURITY_ENABLED ? credentials : {})
-    # Delete all templates first.
+    es_url = ESHelper.get_host_port
+    es_url = SECURE_INTEGRATION ? "https://#{es_url}" : "http://#{es_url}"
+    args = ELASTIC_SECURITY_ENABLED ? "-u #{credentials['user']}:#{credentials['password']}" : ''
     # Clean ES of data before we start.
-    @es.indices.delete_template(:name => "*")
+    # Delete all templates first.
+    ESHelper.curl_and_get_json_response "#{es_url}/_index_template/*", method: 'DELETE', args: args
     # This can fail if there are no indexes, ignore failure.
-    @es.indices.delete(:index => "*") rescue nil
+    ESHelper.curl_and_get_json_response "#{es_url}/_index/*", method: 'DELETE', args: args
+    doc_args = "#{args} -H 'Content-Type: application/json' -d '{\"response\": 404, \"this\":\"that\"}'"
     10.times do
-      ESHelper.index_doc(@es, :index => 'logs', :body => { :response => 404, :this => 'that'})
+      ESHelper.curl_and_get_json_response "#{es_url}/logs/_doc", method: 'POST', args: doc_args
     end
-    @es.indices.refresh
+    ESHelper.curl_and_get_json_response "#{es_url}/_refresh", method: 'POST', args: args
   end
 
   it "should enhance the current event with new data" do
@@ -74,5 +88,18 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
     end
 
   end if ELASTIC_SECURITY_ENABLED
+
+  context 'setting host:port (and ssl)' do # reproduces GH-155
+
+    let(:config) do
+      super().merge "hosts" => [ESHelper.get_host_port], "ssl" => SECURE_INTEGRATION
+    end
+
+    it "works" do
+      expect { plugin.register }.to_not raise_error
+      plugin.filter(event)
+    end
+
+  end
 
 end
