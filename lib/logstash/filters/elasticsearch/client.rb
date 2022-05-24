@@ -27,9 +27,11 @@ module LogStash
         transport_options[:proxy] = proxy.to_s if proxy && !proxy.eql?('')
 
         hosts = setup_hosts(hosts, ssl)
+
+        ssl_options = {}
         # set ca_file even if ssl isn't on, since the host can be an https url
-        ssl_options = { ssl: true, ca_file: options[:ca_file] } if options[:ca_file]
-        ssl_options ||= {}
+        ssl_options.update(ssl: true, ca_file: options[:ca_file]) if options[:ca_file]
+        ssl_options.update(ssl: true, trust_strategy: options[:ssl_trust_strategy]) if options[:ssl_trust_strategy]
 
         logger.info("New ElasticSearch filter client", :hosts => hosts)
         @client = ::Elasticsearch::Client.new(hosts: hosts, transport_options: transport_options, transport_class: ::Elasticsearch::Transport::Transport::HTTP::Manticore, :ssl => ssl_options)
