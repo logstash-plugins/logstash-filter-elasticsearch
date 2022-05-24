@@ -561,6 +561,38 @@ describe LogStash::Filters::Elasticsearch do
     end
   end
 
+  describe "ca_trusted_fingerprint" do
+    let(:ca_trusted_fingerprint) { SecureRandom.hex(32) }
+    let(:config) { {"ca_trusted_fingerprint" => ca_trusted_fingerprint}}
+
+    subject(:plugin) { described_class.new(config) }
+
+    if Gem::Version.create(LOGSTASH_VERSION) >= Gem::Version.create("8.3.0")
+      context 'the generated trust_strategy' do
+        before(:each) { allow(plugin).to receive(:test_connection!) }
+
+        it 'is passed to the Manticore client' do
+          expect(Manticore::Client).to receive(:new)
+                                         .with(
+                                           a_hash_including(
+                                             ssl: a_hash_including(
+                                               trust_strategy: plugin.trust_strategy_for_ca_trusted_fingerprint
+                                             )
+                                           )
+                                         ).and_call_original
+          plugin.register
+
+          # the client is built lazily, so we need to get it explicitly
+          plugin.send(:get_client).client
+        end
+      end
+    else
+      it 'raises a configuration error' do
+        expect { plugin }.to raise_exception(LogStash::ConfigurationError, a_string_including("ca_trusted_fingerprint"))
+      end
+    end
+  end
+
   describe "defaults" do
 
     let(:config) { Hash.new }

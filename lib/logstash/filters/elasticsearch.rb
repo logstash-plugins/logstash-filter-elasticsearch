@@ -2,6 +2,8 @@
 require "logstash/filters/base"
 require "logstash/namespace"
 require "logstash/json"
+require 'logstash/plugin_mixins/ca_trusted_fingerprint_support'
+
 require_relative "elasticsearch/client"
 require_relative "elasticsearch/patches/_elasticsearch_transport_http_manticore"
 
@@ -72,6 +74,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # Tags the event on failure to look up geo information. This can be used in later analysis.
   config :tag_on_failure, :validate => :array, :default => ["_elasticsearch_lookup_failure"]
+
+  # config :ca_trusted_fingerprint, :validate => :sha_256_hex
+  include LogStash::PluginMixins::CATrustedFingerprintSupport
 
   attr_reader :clients_pool
 
@@ -199,6 +204,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       :proxy => @proxy,
       :ssl => @ssl,
       :ca_file => @ca_file,
+      :ssl_trust_strategy => trust_strategy_for_ca_trusted_fingerprint
     }
   end
 
