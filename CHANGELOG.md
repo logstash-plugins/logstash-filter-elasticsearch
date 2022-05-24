@@ -1,5 +1,5 @@
 ## 3.12.0
-  - Added support for `ca_trusted_fingerprint` when run on Logstash 8.3+
+  - Added support for `ca_trusted_fingerprint` when run on Logstash 8.3+ [#158](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/158)
 
 ## 3.11.1
   -  Fix: hosts => "es_host:port" regression [#156](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/156)
