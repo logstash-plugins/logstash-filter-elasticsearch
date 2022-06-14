@@ -7,8 +7,26 @@ module ESHelper
     end
   end
 
-  def self.get_client
-    Elasticsearch::Client.new(:hosts => [get_host_port])
+  def self.curl_and_get_json_response(url, method: :get, args: nil); require 'open3'
+    cmd = "curl -s -v --show-error #{args} -X #{method.to_s.upcase} -k #{url}"
+    begin
+      out, err, status = Open3.capture3(cmd)
+    rescue Errno::ENOENT
+      fail "curl not available, make sure curl binary is installed and available on $PATH"
+    end
+
+    if status.success?
+      http_status = err.match(/< HTTP\/1.1 (.*?)/)[1] || '0' # < HTTP/1.1 200 OK\r\n
+      if http_status.strip[0].to_i > 2
+        warn out
+        fail "#{cmd.inspect} unexpected response: #{http_status}\n\n#{err}"
+      end
+
+      LogStash::Json.load(out)
+    else
+      warn out
+      fail "#{cmd.inspect} process failed: #{status}\n\n#{err}"
+    end
   end
 
   def self.doc_type
@@ -19,12 +37,6 @@ module ESHelper
     else
       "doc"
     end
-  end
-
-  def self.index_doc(es, params)
-    type = doc_type
-    params[:type] = doc_type unless type.nil?
-    es.index(params)
   end
 
   def self.es_version

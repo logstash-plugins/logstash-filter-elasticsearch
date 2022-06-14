@@ -1,6 +1,6 @@
 # Logstash Plugin
 
-[![Travis Build Status](https://travis-ci.org/logstash-plugins/logstash-filter-elasticsearch.svg)](https://travis-ci.org/logstash-plugins/logstash-filter-elasticsearch)
+[![Travis Build Status](https://travis-ci.com/logstash-plugins/logstash-filter-elasticsearch.svg)](https://travis-ci.com/logstash-plugins/logstash-filter-elasticsearch)
 
 This is a plugin for [Logstash](https://github.com/elastic/logstash).
 

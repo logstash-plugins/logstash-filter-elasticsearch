@@ -1,3 +1,34 @@
+## 3.12.0
+  - Added support for `ca_trusted_fingerprint` when run on Logstash 8.3+ [#158](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/158)
+
+## 3.11.1
+  -  Fix: hosts => "es_host:port" regression [#156](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/156)
+
+## 3.11.0
+  - Feat: update Elasticsearch client to 7.14.0 [#150](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/150)
+
+## 3.10.0
+  - Feat: add user-agent header passed to the Elasticsearch HTTP connection [#152](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/152)
+
+## 3.9.5
+  - Fixed SSL handshake hang indefinitely with proxy setup [#151](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/151)
+
+## 3.9.4
+  - Fix: a regression (in LS 7.14.0) where due the elasticsearch client update (from 5.0.5 to 7.5.0) the `Authorization` 
+    header isn't passed, this leads to the plugin not being able to leverage `user`/`password` credentials set by the user.
+    [#148](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/148)
+  - Fix: default setting for `hosts` not working (since 3.7.0) GH-147
+  - Fix: mutating @hosts variable which leads to issues with multiple worker threads GH-129
+
+## 3.9.3
+  - [DOC] Update links to use shared attributes [#144](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/144)
+
+## 3.9.2
+  - [DOC] Fixed links to restructured Logstash-to-cloud docs [#142](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/142)
+
+## 3.9.1
+  - [DOC] Document the permissions required in secured clusters [#140](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/140)
+  
 ## 3.9.0
   - Add support to define a proxy with the proxy config option [#134](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/134)
 

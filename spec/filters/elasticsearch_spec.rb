@@ -3,18 +3,47 @@ require "logstash/devutils/rspec/spec_helper"
 require "logstash/plugin"
 require "logstash/filters/elasticsearch"
 require "logstash/json"
+require "cabin"
+require "webrick"
+require "uri"
 
 describe LogStash::Filters::Elasticsearch do
+
+  subject(:plugin) { described_class.new(config) }
+
+  let(:event)  { LogStash::Event.new({}) }
 
   context "registration" do
 
     let(:plugin) { LogStash::Plugin.lookup("filter", "elasticsearch").new({}) }
-    before do
-      allow(plugin).to receive(:test_connection!)
+
+    context "against authentic Elasticsearch" do
+      before do
+        allow(plugin).to receive(:test_connection!)
+      end
+      
+      it "should not raise an exception" do
+        expect {plugin.register}.to_not raise_error
+      end
     end
 
-    it "should not raise an exception" do
-      expect {plugin.register}.to_not raise_error
+    context "against not authentic Elasticsearch" do
+      let(:failing_client) do
+        client = double("client")
+        allow(client).to receive(:ping).and_raise Elasticsearch::UnsupportedProductError
+
+        client_wrapper = double("filter_client")
+        allow(client_wrapper).to receive(:client).and_return client
+        client_wrapper
+      end
+
+      before do
+        allow(plugin).to receive(:get_client).and_return(failing_client)
+      end
+
+      it "should raise ConfigurationError" do
+        expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
+      end
     end
   end
 
@@ -28,8 +57,6 @@ describe LogStash::Filters::Elasticsearch do
         "aggregation_fields" => { "bytes_avg" => "bytes_avg_ls_field" }
       }
     end
-    let(:plugin) { described_class.new(config) }
-    let(:event)  { LogStash::Event.new({}) }
 
     let(:response) do
       LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_x_1.json")))
@@ -291,6 +318,112 @@ describe LogStash::Filters::Elasticsearch do
     end
   end
 
+  class StoppableServer
+
+    attr_reader :port
+
+    def initialize()
+      queue = Queue.new
+      @first_req_waiter = java.util.concurrent.CountDownLatch.new(1)
+      @first_request = nil
+
+      @t = java.lang.Thread.new(
+        proc do
+          begin
+            @server = WEBrick::HTTPServer.new :Port => 0, :DocumentRoot => ".",
+                     :Logger => Cabin::Channel.get, # silence WEBrick logging
+                     :StartCallback => Proc.new {
+                           queue.push("started")
+                         }
+            @port = @server.config[:Port]
+            @server.mount_proc '/' do |req, res|
+              res.body = '''
+              {
+                  "name": "ce7ccfb438e8",
+                  "cluster_name": "docker-cluster",
+                  "cluster_uuid": "DyR1hN03QvuCWXRy3jtb0g",
+                  "version": {
+                      "number": "7.13.1",
+                      "build_flavor": "default",
+                      "build_type": "docker",
+                      "build_hash": "9a7758028e4ea59bcab41c12004603c5a7dd84a9",
+                      "build_date": "2021-05-28T17:40:59.346932922Z",
+                      "build_snapshot": false,
+                      "lucene_version": "8.8.2",
+                      "minimum_wire_compatibility_version": "6.8.0",
+                      "minimum_index_compatibility_version": "6.0.0-beta1"
+                  },
+                  "tagline": "You Know, for Search"
+              }
+              '''
+              res.status = 200
+              res['Content-Type'] = 'application/json'
+              @first_request = req
+              @first_req_waiter.countDown()
+            end
+
+            @server.start
+          rescue => e
+            puts "Error in webserver thread #{e}"
+            # ignore
+          end
+        end
+      )
+      @t.daemon = true
+      @t.start
+      queue.pop # blocks until the server is up
+    end
+
+    def stop
+      @server.shutdown
+    end
+
+    def wait_receive_request
+      @first_req_waiter.await(2, java.util.concurrent.TimeUnit::SECONDS)
+      @first_request
+    end
+  end
+
+  describe "user-agent header" do
+    let!(:webserver) { StoppableServer.new } # webserver must be started before the call, so no lazy "let"
+
+    after :each do
+      webserver.stop
+    end
+
+    it "server should be started" do
+      require 'net/http'
+      response = nil
+      Net::HTTP.start('localhost', webserver.port) {|http|
+        response = http.request_get('/')
+      }
+      expect(response.code.to_i).to eq(200)
+    end
+
+    context "used by plugin" do
+      let(:config) do
+        {
+          "hosts" => ["localhost:#{webserver.port}"],
+          "query" => "response: 404",
+          "fields" => { "response" => "code" },
+          "docinfo_fields" => { "_index" => "es_index" },
+          "aggregation_fields" => { "bytes_avg" => "bytes_avg_ls_field" }
+        }
+      end
+      let(:plugin) { described_class.new(config) }
+      let(:event)  { LogStash::Event.new({}) }
+
+      it "client should sent the expect user-agent" do
+        plugin.register
+
+        request = webserver.wait_receive_request
+
+        expect(request.header['user-agent'].size).to eq(1)
+        expect(request.header['user-agent'][0]).to match(/logstash\/\d*\.\d*\.\d* \(OS=.*; JVM=.*\) logstash-filter-elasticsearch\/\d*\.\d*\.\d*/)
+      end
+    end
+  end
+
   describe "client" do
     let(:config) do
       {
@@ -313,12 +446,12 @@ describe LogStash::Filters::Elasticsearch do
         'sample:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlvJGFjMzFlYmI5MDI0MTc3MzE1NzA0M2MzNGZkMjZmZDQ2OjkyNDMkYTRjMDYyMzBlNDhjOGZjZTdiZTg4YTA3NGEzYmIzZTA6OTI0NA=='
       end
 
-      let(:config) { super.merge({ 'cloud_id' => valid_cloud_id }) }
+      let(:config) { super().merge({ 'cloud_id' => valid_cloud_id }) }
 
       it "should set host(s)" do
         plugin.register
         client = plugin.send(:get_client).client
-        expect( client.transport.hosts ).to eql [{
+        expect( extract_transport(client).hosts ).to eql [{
                                                      :scheme => "https",
                                                      :host => "ac31ebb90241773157043c34fd26fd46.us-central1.gcp.cloud.es.io",
                                                      :port => 9243,
@@ -328,7 +461,7 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       context 'invalid' do
-        let(:config) { super.merge({ 'cloud_id' => 'invalid:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlv' }) }
+        let(:config) { super().merge({ 'cloud_id' => 'invalid:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlv' }) }
 
         it "should fail" do
           expect { plugin.register }.to raise_error LogStash::ConfigurationError, /cloud_id.*? is invalid/
@@ -336,7 +469,7 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       context 'hosts also set' do
-        let(:config) { super.merge({ 'cloud_id' => valid_cloud_id, 'hosts' => [ 'localhost:9200' ] }) }
+        let(:config) { super().merge({ 'cloud_id' => valid_cloud_id, 'hosts' => [ 'localhost:9200' ] }) }
 
         it "should fail" do
           expect { plugin.register }.to raise_error LogStash::ConfigurationError, /cloud_id and hosts/
@@ -345,18 +478,18 @@ describe LogStash::Filters::Elasticsearch do
     end if LOGSTASH_VERSION > '6.0'
 
     describe "cloud.auth" do
-      let(:config) { super.merge({ 'cloud_auth' => LogStash::Util::Password.new('elastic:my-passwd-00') }) }
+      let(:config) { super().merge({ 'cloud_auth' => LogStash::Util::Password.new('elastic:my-passwd-00') }) }
 
       it "should set authorization" do
         plugin.register
         client = plugin.send(:get_client).client
-        auth_header = client.transport.options[:transport_options][:headers][:Authorization]
+        auth_header = extract_transport(client).options[:transport_options][:headers]['Authorization']
 
         expect( auth_header ).to eql "Basic #{Base64.encode64('elastic:my-passwd-00').rstrip}"
       end
 
       context 'invalid' do
-        let(:config) { super.merge({ 'cloud_auth' => 'invalid-format' }) }
+        let(:config) { super().merge({ 'cloud_auth' => 'invalid-format' }) }
 
         it "should fail" do
           expect { plugin.register }.to raise_error LogStash::ConfigurationError, /cloud_auth.*? format/
@@ -364,7 +497,7 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       context 'user also set' do
-        let(:config) { super.merge({ 'cloud_auth' => 'elastic:my-passwd-00', 'user' => 'another' }) }
+        let(:config) { super().merge({ 'cloud_auth' => 'elastic:my-passwd-00', 'user' => 'another' }) }
 
         it "should fail" do
           expect { plugin.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
@@ -374,7 +507,7 @@ describe LogStash::Filters::Elasticsearch do
 
     describe "api_key" do
       context "without ssl" do
-        let(:config) { super.merge({ 'api_key' => LogStash::Util::Password.new('foo:bar') }) }
+        let(:config) { super().merge({ 'api_key' => LogStash::Util::Password.new('foo:bar') }) }
 
         it "should fail" do
           expect { plugin.register }.to raise_error LogStash::ConfigurationError, /api_key authentication requires SSL\/TLS/
@@ -382,18 +515,18 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       context "with ssl" do
-        let(:config) { super.merge({ 'api_key' => LogStash::Util::Password.new('foo:bar'), "ssl" => true }) }
+        let(:config) { super().merge({ 'api_key' => LogStash::Util::Password.new('foo:bar'), "ssl" => true }) }
 
         it "should set authorization" do
           plugin.register
           client = plugin.send(:get_client).client
-          auth_header = client.transport.options[:transport_options][:headers][:Authorization]
+          auth_header = extract_transport(client).options[:transport_options][:headers]['Authorization']
 
           expect( auth_header ).to eql "ApiKey #{Base64.strict_encode64('foo:bar')}"
         end
 
         context 'user also set' do
-          let(:config) { super.merge({ 'api_key' => 'foo:bar', 'user' => 'another' }) }
+          let(:config) { super().merge({ 'api_key' => 'foo:bar', 'user' => 'another' }) }
 
           it "should fail" do
             expect { plugin.register }.to raise_error LogStash::ConfigurationError, /Multiple authentication options are specified/
@@ -404,27 +537,75 @@ describe LogStash::Filters::Elasticsearch do
 
     describe "proxy" do
       context 'valid' do
-        let(:config) { super.merge({ 'proxy' => 'http://localhost:1234' }) }
+        let(:config) { super().merge({ 'proxy' => 'http://localhost:1234' }) }
 
         it "should set proxy" do
           plugin.register
           client = plugin.send(:get_client).client
-          proxy = client.transport.options[:transport_options][:proxy]
+          proxy = extract_transport(client).options[:transport_options][:proxy]
 
           expect( proxy ).to eql "http://localhost:1234"
         end
       end
 
       context 'invalid' do
-        let(:config) { super.merge({ 'proxy' => '${A_MISSING_ENV_VAR:}' }) }
+        let(:config) { super().merge({ 'proxy' => '${A_MISSING_ENV_VAR:}' }) }
 
         it "should not set proxy" do
           plugin.register
           client = plugin.send(:get_client).client
 
-          expect( client.transport.options[:transport_options] ).to_not include(:proxy)
+          expect( extract_transport(client).options[:transport_options] ).to_not include(:proxy)
         end
       end
+    end
+  end
+
+  describe "ca_trusted_fingerprint" do
+    let(:ca_trusted_fingerprint) { SecureRandom.hex(32) }
+    let(:config) { {"ca_trusted_fingerprint" => ca_trusted_fingerprint}}
+
+    subject(:plugin) { described_class.new(config) }
+
+    if Gem::Version.create(LOGSTASH_VERSION) >= Gem::Version.create("8.3.0")
+      context 'the generated trust_strategy' do
+        before(:each) { allow(plugin).to receive(:test_connection!) }
+
+        it 'is passed to the Manticore client' do
+          expect(Manticore::Client).to receive(:new)
+                                         .with(
+                                           a_hash_including(
+                                             ssl: a_hash_including(
+                                               trust_strategy: plugin.trust_strategy_for_ca_trusted_fingerprint
+                                             )
+                                           )
+                                         ).and_call_original
+          plugin.register
+
+          # the client is built lazily, so we need to get it explicitly
+          plugin.send(:get_client).client
+        end
+      end
+    else
+      it 'raises a configuration error' do
+        expect { plugin }.to raise_exception(LogStash::ConfigurationError, a_string_including("ca_trusted_fingerprint"))
+      end
+    end
+  end
+
+  describe "defaults" do
+
+    let(:config) { Hash.new }
+    let(:plugin) { described_class.new(config) }
+
+    before { allow(plugin).to receive(:test_connection!) }
+
+    it "should set localhost:9200 as hosts" do
+      plugin.register
+      client = plugin.send(:get_client).client
+      hosts = extract_transport(client).hosts
+      expect( hosts.size ).to be 1
+      expect( hosts[0] ).to include(:host => "localhost", :port => 9200, :scheme => "http")
     end
   end
 
@@ -453,4 +634,10 @@ describe LogStash::Filters::Elasticsearch do
       plugin.filter(LogStash::Event.new)
     end
   end
+
+  # @note can be removed once gem depends on elasticsearch >= 6.x
+  def extract_transport(client) # on 7.x client.transport is a ES::Transport::Client
+    client.transport.respond_to?(:transport) ? client.transport.transport : client.transport
+  end
+
 end

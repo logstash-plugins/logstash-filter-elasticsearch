@@ -5,9 +5,13 @@ services:
   logstash:
     command: /usr/share/plugins/plugin/.ci/logstash-run.sh
     environment:
+        - ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
         - INTEGRATION=${INTEGRATION:-false}
         - SECURE_INTEGRATION=${SECURE_INTEGRATION:-false}
-        - ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
+        - ELASTIC_SECURITY_ENABLED=$ELASTIC_SECURITY_ENABLED
+        - ELASTIC_PASSWORD=$ELASTIC_PASSWORD
+        - ES_SSL_SUPPORTED_PROTOCOLS=$ES_SSL_SUPPORTED_PROTOCOLS
+
   elasticsearch:
     build:
       context: ../
@@ -16,9 +20,21 @@ services:
         - ELASTIC_STACK_VERSION=$ELASTIC_STACK_VERSION
         - INTEGRATION=${INTEGRATION:-false}
         - SECURE_INTEGRATION=${SECURE_INTEGRATION:-false}
-    command: /usr/share/elasticsearch/elasticsearch-run.sh
+        - ES_SSL_SUPPORTED_PROTOCOLS=$ES_SSL_SUPPORTED_PROTOCOLS
+    environment:
+      - ELASTIC_PASSWORD=$ELASTIC_PASSWORD
+      - xpack.security.enabled=${ELASTIC_SECURITY_ENABLED:-false}
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms640m -Xmx640m
     tty: true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     ports:
       - "9200:9200"
     user: elasticsearch
 
+
+# bundle exec rspec -fd --tag integration --tag es_version:6.8.18 spec/filters/integration

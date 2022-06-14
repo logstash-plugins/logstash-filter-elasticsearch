@@ -1,19 +1,17 @@
 # encoding: utf-8
 require "logstash/filters/base"
 require "logstash/namespace"
-require_relative "elasticsearch/client"
 require "logstash/json"
-require "logstash/util/safe_uri"
-java_import "java.util.concurrent.ConcurrentHashMap"
+require 'logstash/plugin_mixins/ca_trusted_fingerprint_support'
 
+require_relative "elasticsearch/client"
+require_relative "elasticsearch/patches/_elasticsearch_transport_http_manticore"
 
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config_name "elasticsearch"
 
-  DEFAULT_HOST = ::LogStash::Util::SafeURI.new("//localhost:9200")
-
   # List of elasticsearch hosts to use for querying.
-  config :hosts, :validate => :array, :default => [ DEFAULT_HOST ]
+  config :hosts, :validate => :array, :default => [ 'localhost:9200' ]
 
   # Comma-delimited list of index names to search; use `_all` or empty string to perform the operation on all indices.
   # Field substitution (e.g. `index-name-%{date_field}`) is available
@@ -77,11 +75,15 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Tags the event on failure to look up geo information. This can be used in later analysis.
   config :tag_on_failure, :validate => :array, :default => ["_elasticsearch_lookup_failure"]
 
+
   # How many times to retry on failure?
   config :retry_on_failure, :validate => :number, :default => 0
 
   # What status codes to retry on?
   config :retry_on_status, :validate => :array, :default => []
+
+  # config :ca_trusted_fingerprint, :validate => :sha_256_hex
+  include LogStash::PluginMixins::CATrustedFingerprintSupport
 
   attr_reader :clients_pool
 
@@ -118,7 +120,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     fill_user_password_from_cloud_auth
     fill_hosts_from_cloud_id
 
-    @hosts = Array(@hosts).map { |host| host.to_s } # for ES client URI#to_s
+    @hosts = Array(@hosts).map { |host| host.to_s } # potential SafeURI#to_s
 
     test_connection!
   end # def register
@@ -126,7 +128,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   def filter(event)
     matched = false
     begin
-      params = {:index => event.sprintf(@index) }
+      params = { :index => event.sprintf(@index) }
 
       if @query_dsl
         query = LogStash::Json.load(event.sprintf(@query_dsl))
@@ -186,6 +188,19 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     end
   end # def filter
 
+  # public only to be reuse in testing
+  def prepare_user_agent
+    os_name = java.lang.System.getProperty('os.name')
+    os_version = java.lang.System.getProperty('os.version')
+    os_arch = java.lang.System.getProperty('os.arch')
+    jvm_vendor = java.lang.System.getProperty('java.vendor')
+    jvm_version = java.lang.System.getProperty('java.version')
+
+    plugin_version = Gem.loaded_specs['logstash-filter-elasticsearch'].version
+    # example: logstash/7.14.1 (OS=Linux-5.4.0-84-generic-amd64; JVM=AdoptOpenJDK-11.0.11) logstash-output-elasticsearch/11.0.1
+    "logstash/#{LOGSTASH_VERSION} (OS=#{os_name}-#{os_version}-#{os_arch}; JVM=#{jvm_vendor}-#{jvm_version}) logstash-#{@plugin_type}-#{config_name}/#{plugin_version}"
+  end
+
   private
 
   def client_options
@@ -198,13 +213,18 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       :ca_file => @ca_file,
       :retry_on_failure => @retry_on_failure,
       :retry_on_status => @retry_on_status
+      :ssl_trust_strategy => trust_strategy_for_ca_trusted_fingerprint
     }
   end
 
   def new_client
     # NOTE: could pass cloud-id/cloud-auth to client but than we would need to be stricter on ES version requirement
     # and also LS parsing might differ from ES client's parsing so for consistency we do not pass cloud options ...
-    LogStash::Filters::ElasticsearchClient.new(@logger, @hosts, client_options)
+    opts = client_options
+
+    opts[:user_agent] = prepare_user_agent
+
+    LogStash::Filters::ElasticsearchClient.new(@logger, @hosts, opts)
   end
 
   def get_client
@@ -245,8 +265,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def hosts_default?(hosts)
-    # NOTE: would be nice if pipeline allowed us a clean way to detect a config default :
-    hosts.is_a?(Array) && hosts.size == 1 && hosts.first.equal?(DEFAULT_HOST)
+    hosts.is_a?(Array) && hosts.size == 1 && !original_params.key?('hosts')
   end
 
   def validate_authentication
@@ -281,6 +300,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def parse_host_uri_from_cloud_id(cloud_id)
+    require 'logstash/util/safe_uri'
     begin # might not be available on older LS
       require 'logstash/util/cloud_setting_id'
     rescue LoadError
@@ -315,6 +335,10 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def test_connection!
-    get_client.client.ping
+    begin
+      get_client.client.ping
+    rescue Elasticsearch::UnsupportedProductError
+      raise LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch"
+    end
   end
 end #class LogStash::Filters::Elasticsearch
