@@ -66,6 +66,13 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # SSL Certificate Authority file
   config :ca_file, :validate => :path
 
+  # The keystore used to present a certificate to the server.
+  # It can be either .jks or .p12
+  config :keystore, :validate => :path
+
+  # Set the keystore password
+  config :keystore_password, :validate => :password
+
   # Whether results should be sorted or not
   config :enable_sort, :validate => :boolean, :default => true
 
@@ -204,6 +211,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       :proxy => @proxy,
       :ssl => @ssl,
       :ca_file => @ca_file,
+      :keystore => @keystore,
+      :keystore_password => @keystore_password,
       :ssl_trust_strategy => trust_strategy_for_ca_trusted_fingerprint
     }
   end
