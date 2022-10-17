@@ -37,7 +37,7 @@ module LogStash
 
         if keystore
           ssl_options[:keystore] = keystore
-          logger.info("Keystore for client certificate", :keystore => keystore)
+          logger.debug("Keystore for client certificate", :keystore => keystore)
           ssl_options[:keystore_password] = keystore_password.value if keystore_password
         end
 

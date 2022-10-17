@@ -116,6 +116,10 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       @query_dsl = file.read
     end
 
+    if @keystore_password && !@keystore
+      fail "`keystore_password` was provided, without a `keystore`"
+    end
+
     validate_authentication
     fill_user_password_from_cloud_auth
     fill_hosts_from_cloud_id
