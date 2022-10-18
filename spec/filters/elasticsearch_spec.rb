@@ -594,7 +594,7 @@ describe LogStash::Filters::Elasticsearch do
   end
 
   describe "keystore and keystore_password" do
-    let(:keystore_path) { Pathname.new("fixtures/test_certs/ls.p12").expand_path(__dir__).cleanpath.to_s }
+    let(:keystore_path) { Pathname.new("fixtures/test_certs/ls.chain.p12").expand_path(__dir__).cleanpath.to_s }
     let(:keystore_password) { '12345678' }
 
     let(:config) do
