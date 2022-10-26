@@ -102,4 +102,53 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
 
   end
 
+  if SECURE_INTEGRATION
+    context 'setting keystore' do
+      let(:keystore_path) { Pathname.new("../fixtures/test_certs/ls.chain.p12").expand_path(__dir__).cleanpath.to_s }
+      let(:keystore_password) { '12345678' }
+
+      let(:config) do
+        super().merge(
+          "hosts" => [ESHelper.get_host_port],
+          "keystore" => keystore_path,
+          "keystore_password" => keystore_password,
+          "ssl" => true,
+          "fields" => { "this" => "contents", "response" => "four-oh-four" }
+        )
+      end
+
+      it "should enhance the current event with new data" do
+        plugin.register
+        plugin.filter(event)
+        puts event.to_hash.inspect
+        expect(event.get('contents')).to eq('that')
+        expect(event.get('four-oh-four')).to eq(404)
+      end
+    end
+
+    if Gem::Version.create(LOGSTASH_VERSION) >= Gem::Version.create("8.3.0")
+      context 'setting ca_trusted_finterprint WITHOUT ca_file' do
+        let(:ca_trusted_fingerprint) { Pathname.new("../fixtures/test_certs/ca.der.sha256").expand_path(__dir__).read.chomp }
+
+        let(:config) do
+          bc = super()
+          bc.delete('ca_file')
+          bc.merge({
+            'ca_trusted_fingerprint' => ca_trusted_fingerprint,
+            'fields' => { "this" => "contents", "response" => "four-oh-four" }
+          })
+        end
+
+        it "should enhance the current event with new data" do
+          puts config.inspect
+          plugin.register
+          plugin.filter(event)
+          puts event.to_hash.inspect
+          expect(event.get('contents')).to eq('that')
+          expect(event.get('four-oh-four')).to eq(404)
+        end
+      end
+    end
+  end
+
 end
