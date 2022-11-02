@@ -1,3 +1,9 @@
+## 3.14.0
+  - Added support for configurable retries with new `retry_on_failure` and `retry_on_status` options [#160](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/160)
+
+## 3.13.0
+  - Added support for this plugin identifying itself to Elasticsearch with an SSL/TLS client certificate using a new `keystore` option [#162](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/162)
+
 ## 3.12.0
   - Added support for `ca_trusted_fingerprint` when run on Logstash 8.3+ [#158](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/158)
 

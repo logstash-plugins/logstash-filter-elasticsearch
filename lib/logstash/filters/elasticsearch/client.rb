@@ -12,6 +12,8 @@ module LogStash
 
       def initialize(logger, hosts, options = {})
         ssl = options.fetch(:ssl, false)
+        keystore = options.fetch(:keystore, nil)
+        keystore_password = options.fetch(:keystore_password, nil)
         user = options.fetch(:user, nil)
         password = options.fetch(:password, nil)
         api_key = options.fetch(:api_key, nil)
@@ -32,6 +34,11 @@ module LogStash
         # set ca_file even if ssl isn't on, since the host can be an https url
         ssl_options.update(ssl: true, ca_file: options[:ca_file]) if options[:ca_file]
         ssl_options.update(ssl: true, trust_strategy: options[:ssl_trust_strategy]) if options[:ssl_trust_strategy]
+        if keystore
+          ssl_options[:keystore] = keystore
+          logger.debug("Keystore for client certificate", :keystore => keystore)
+          ssl_options[:keystore_password] = keystore_password.value if keystore_password
+        end
 
         client_options = {
                        hosts: hosts,

@@ -66,6 +66,13 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # SSL Certificate Authority file
   config :ca_file, :validate => :path
 
+  # The keystore used to present a certificate to the server.
+  # It can be either .jks or .p12
+  config :keystore, :validate => :path
+
+  # Set the keystore password
+  config :keystore_password, :validate => :password
+
   # Whether results should be sorted or not
   config :enable_sort, :validate => :boolean, :default => true
 
@@ -113,6 +120,10 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       end
       file = File.open(@query_template, 'r')
       @query_dsl = file.read
+    end
+
+    if @keystore_password && !@keystore
+      fail "`keystore_password` was provided, without a `keystore`"
     end
 
     validate_authentication
@@ -212,6 +223,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       :ca_file => @ca_file,
       :retry_on_failure => @retry_on_failure,
       :retry_on_status => @retry_on_status,
+      :keystore => @keystore,
+      :keystore_password => @keystore_password,
       :ssl_trust_strategy => trust_strategy_for_ca_trusted_fingerprint
     }
   end

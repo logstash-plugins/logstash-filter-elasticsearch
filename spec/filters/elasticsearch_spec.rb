@@ -624,6 +624,42 @@ describe LogStash::Filters::Elasticsearch do
     end
   end
 
+  describe "keystore and keystore_password" do
+    let(:keystore_path) { Pathname.new("fixtures/test_certs/ls.chain.p12").expand_path(__dir__).cleanpath.to_s }
+    let(:keystore_password) { '12345678' }
+
+    let(:config) do
+      {
+        'keystore' => keystore_path,
+        'keystore_password' => keystore_password,
+      }
+    end
+
+    subject(:plugin) { described_class.new(config) }
+
+    before(:each) { allow(plugin).to receive(:test_connection!) }
+
+    it 'is passed to the Manticore client' do
+      expect(Manticore::Client).to receive(:new)
+                                     .with(
+                                       a_hash_including(
+                                         ssl: a_hash_including(
+                                           keystore: keystore_path,
+                                           keystore_password: keystore_password
+                                         )
+                                       )
+                                     ).and_call_original
+
+      allow(plugin.logger).to receive(:debug).and_call_original
+      expect(plugin.logger).to receive(:debug).with(a_string_including('Keystore for client certificate'), anything)
+
+      plugin.register
+
+      # the client is built lazily, so we need to get it explicitly
+      plugin.send(:get_client).client
+    end
+  end
+
   describe "defaults" do
 
     let(:config) { Hash.new }
