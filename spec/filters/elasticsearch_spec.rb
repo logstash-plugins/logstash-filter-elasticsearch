@@ -301,6 +301,15 @@ describe LogStash::Filters::Elasticsearch do
       end
     end
 
+    context 'with client-level retries' do
+      let(:config) do
+        super().merge(
+          "retry_on_failure" => 3,
+          "retry_on_status" => [500]
+        )
+      end
+    end
+
     context "if query is on nested field" do
       let(:config) do
         {
@@ -557,6 +566,28 @@ describe LogStash::Filters::Elasticsearch do
 
           expect( extract_transport(client).options[:transport_options] ).to_not include(:proxy)
         end
+      end
+    end
+
+    describe "retry_on_failure" do
+      let(:config) { super().merge("retry_on_failure" => 3) }
+
+      it 'propagates to the client' do
+        plugin.register
+
+        client = plugin.send(:get_client).client
+        expect( extract_transport(client).options[:retry_on_failure] ).to eq(3)
+      end
+    end
+
+    describe "retry_on_status" do
+      let(:config) { super().merge("retry_on_status" => [500, 502, 503, 504]) }
+
+      it 'propagates to the client' do
+        plugin.register
+
+        client = plugin.send(:get_client).client
+        expect( extract_transport(client).options[:retry_on_status] ).to eq([500, 502, 503, 504])
       end
     end
   end

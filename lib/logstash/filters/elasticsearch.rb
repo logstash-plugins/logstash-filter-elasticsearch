@@ -82,6 +82,12 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Tags the event on failure to look up geo information. This can be used in later analysis.
   config :tag_on_failure, :validate => :array, :default => ["_elasticsearch_lookup_failure"]
 
+  # How many times to retry on failure?
+  config :retry_on_failure, :validate => :number, :default => 0
+
+  # What status codes to retry on?
+  config :retry_on_status, :validate => :number, :list => true, :default => [500, 502, 503, 504]
+
   # config :ca_trusted_fingerprint, :validate => :sha_256_hex
   include LogStash::PluginMixins::CATrustedFingerprintSupport
 
@@ -215,6 +221,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       :proxy => @proxy,
       :ssl => @ssl,
       :ca_file => @ca_file,
+      :retry_on_failure => @retry_on_failure,
+      :retry_on_status => @retry_on_status,
       :keystore => @keystore,
       :keystore_password => @keystore_password,
       :ssl_trust_strategy => trust_strategy_for_ca_trusted_fingerprint
