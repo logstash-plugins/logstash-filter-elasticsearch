@@ -91,7 +91,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # config :ca_trusted_fingerprint, :validate => :sha_256_hex
   include LogStash::PluginMixins::CATrustedFingerprintSupport
 
-  attr_reader :clients_pool
+  attr_reader :shared_client
 
   ##
   # @override to handle proxy => '' as if none was set
@@ -111,7 +111,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def register
-    @clients_pool = java.util.concurrent.ConcurrentHashMap.new
 
     #Load query if it exists
     if @query_template
@@ -240,7 +239,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def get_client
-    @clients_pool.computeIfAbsent(Thread.current, lambda { |x| new_client })
+    @shared_client ||= new_client
   end
 
   # get an array of path elements from a path reference

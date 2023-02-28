@@ -24,9 +24,9 @@ wait_for_es() {
 }
 
 if [[ "$INTEGRATION" != "true" ]]; then
-  jruby -rbundler/setup -S rspec -fd -t ~integration spec/filters
+  bundle exec rspec --format=documentation -t ~integration spec/filters
 else
   extra_tag_args="-t integration"
   wait_for_es
-  jruby -rbundler/setup -S rspec -fd $extra_tag_args -t es_version:$ELASTIC_STACK_VERSION spec/filters/integration
+  bundle exec  rspec --format=documentation $extra_tag_args -t es_version:$ELASTIC_STACK_VERSION spec/filters/integration
 fi

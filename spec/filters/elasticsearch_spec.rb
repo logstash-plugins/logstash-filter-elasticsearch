@@ -75,21 +75,6 @@ describe LogStash::Filters::Elasticsearch do
       Thread.current[:filter_elasticsearch_client] = nil
     end
 
-    # Since the Elasticsearch Ruby client is not thread safe
-    # and under high load we can get error with the connection pool
-    # we have decided to create a new instance per worker thread which
-    # will be lazy created on the first call to `#filter`
-    #
-    # I am adding a simple test case for future changes
-    it "uses a different connection object per thread wait" do
-      expect(plugin.clients_pool.size).to eq(0)
-
-      Thread.new { plugin.filter(event) }.join
-      Thread.new { plugin.filter(event) }.join
-
-      expect(plugin.clients_pool.size).to eq(2)
-    end
-
     it "should enhance the current event with new data" do
       plugin.filter(event)
       expect(event.get("code")).to eq(404)
@@ -448,6 +433,24 @@ describe LogStash::Filters::Elasticsearch do
 
     after(:each) do
       Thread.current[:filter_elasticsearch_client] = nil
+    end
+
+    it 'uses a threadsafe transport adapter' do
+      client = plugin.send(:get_client).client
+      # we currently rely on the threadsafety guarantees provided by Manticore
+      # this spec is a safeguard to trigger an assessment of thread-safety should
+      # we choose a different transport adapter in the future.
+      expect(extract_transport(client).to_s).to include('Manticore')
+    end
+
+    it 'uses a single shared client across threads' do
+      q = Queue.new
+      10.times.map do
+        Thread.new(plugin) { |instance| q.push instance.send(:get_client) }
+      end.map(&:join)
+
+      first = q.pop
+      expect(q.pop).to be(first) until q.empty?
     end
 
     describe "cloud.id" do
