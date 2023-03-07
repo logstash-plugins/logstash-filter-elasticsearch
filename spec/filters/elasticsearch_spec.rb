@@ -524,7 +524,7 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       context "with ssl" do
-        let(:config) { super().merge({ 'api_key' => LogStash::Util::Password.new('foo:bar'), "ssl" => true }) }
+        let(:config) { super().merge({ 'api_key' => LogStash::Util::Password.new('foo:bar'), "ssl_enabled" => true }) }
 
         it "should set authorization" do
           plugin.register
@@ -630,8 +630,9 @@ describe LogStash::Filters::Elasticsearch do
 
     let(:config) do
       {
-        'keystore' => keystore_path,
-        'keystore_password' => keystore_password,
+        'hosts' => 'https://localhost:9200',
+        'ssl_keystore_path' => keystore_path,
+        'ssl_keystore_password' => keystore_password,
       }
     end
 
