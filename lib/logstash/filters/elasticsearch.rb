@@ -64,40 +64,34 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # SSL
   config :ssl, :validate => :boolean, :default => false, :deprecated => "Set 'ssl_enabled' instead."
 
-  # SSL
-  config :ssl_enabled, :validate => :boolean
-
   # SSL Certificate Authority file
   config :ca_file, :validate => :path, :deprecated => "Set 'ssl_certificate_authorities' instead."
-
-  # SSL Certificate Authority files in PEM encoded format, must also include any chain certificates as necessary
-  config :ssl_certificate_authorities, :validate => :path, :list => true
-
-  # Options to verify the server's certificate.
-  # "full": validates that the provided certificate has an issue date that’s within the not_before and not_after dates;
-  # chains to a trusted Certificate Authority (CA); has a hostname or IP address that matches the names within the certificate.
-  # "none": performs no certificate validation. Disabling this severely compromises security (https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf)
-  config :ssl_verification_mode, :validate => %w[full none], :default => 'full'
-
-  # OpenSSL-style X.509 certificate certificate to authenticate the client
-  config :ssl_certificate, :validate => :path
-
-  # OpenSSL-style RSA private key to authenticate the client
-  config :ssl_key, :validate => :path
-
-  # The JKS truststore to validate the server's certificate.
-  # Use either `:ssl_truststore_path` or `:ssl_certificate_authorities`
-  config :ssl_truststore_path, :validate => :path
-
-  # The format of the truststore file. It must be either jks or pkcs12
-  config :ssl_truststore_type, :validate => %w[pkcs12 jks]
-
-  # Set the truststore password
-  config :ssl_truststore_password, :validate => :password
 
   # The keystore used to present a certificate to the server.
   # It can be either .jks or .p12
   config :keystore, :validate => :path, :deprecated => "Use 'ssl_keystore_path' instead."
+
+  # Set the keystore password
+  config :keystore_password, :validate => :password, :deprecated => "Use 'ssl_keystore_password' instead."
+
+  # OpenSSL-style X.509 certificate certificate to authenticate the client
+  config :ssl_certificate, :validate => :path
+
+  # SSL Certificate Authority files in PEM encoded format, must also include any chain certificates as necessary
+  config :ssl_certificate_authorities, :validate => :path, :list => true
+
+  # The list of cipher suites to use, listed by priorities.
+  # Supported cipher suites vary depending on which version of Java is used.
+  config :ssl_cipher_suites, :validate => :string, :list => true
+
+  # SSL
+  config :ssl_enabled, :validate => :boolean
+
+  # OpenSSL-style RSA private key to authenticate the client
+  config :ssl_key, :validate => :path
+
+  # Set the keystore password
+  config :ssl_keystore_password, :validate => :password
 
   # The keystore used to present a certificate to the server.
   # It can be either .jks or .p12
@@ -106,18 +100,24 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # The format of the keystore file. It must be either jks or pkcs12
   config :ssl_keystore_type, :validate => %w[pkcs12 jks]
 
-  # Set the keystore password
-  config :keystore_password, :validate => :password, :deprecated => "Use 'ssl_keystore_password' instead."
-
-  # Set the keystore password
-  config :ssl_keystore_password, :validate => :password
-
-  # The list of cipher suites to use, listed by priorities.
-  # Supported cipher suites vary depending on which version of Java is used.
-  config :ssl_cipher_suites, :validate => :string, :list => true
-
   # Supported protocols with versions.
   config :ssl_supported_protocols, :validate => %w[TLSv1.1 TLSv1.2 TLSv1.3], :default => [], :list => true
+
+  # Set the truststore password
+  config :ssl_truststore_password, :validate => :password
+
+  # The JKS truststore to validate the server's certificate.
+  # Use either `:ssl_truststore_path` or `:ssl_certificate_authorities`
+  config :ssl_truststore_path, :validate => :path
+
+  # The format of the truststore file. It must be either jks or pkcs12
+  config :ssl_truststore_type, :validate => %w[pkcs12 jks]
+
+  # Options to verify the server's certificate.
+  # "full": validates that the provided certificate has an issue date that’s within the not_before and not_after dates;
+  # chains to a trusted Certificate Authority (CA); has a hostname or IP address that matches the names within the certificate.
+  # "none": performs no certificate validation. Disabling this severely compromises security (https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf)
+  config :ssl_verification_mode, :validate => %w[full none], :default => 'full'
 
   # Whether results should be sorted or not
   config :enable_sort, :validate => :boolean, :default => true
@@ -174,6 +174,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     setup_ssl_params!
     validate_authentication
     fill_user_password_from_cloud_auth
+
+    @hosts = Array(@hosts).map { |host| host.to_s } # potential SafeURI#to_s
 
     test_connection!
   end # def register
@@ -270,11 +272,15 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   def client_ssl_options
     ssl_options = {}
-    ssl_options[:enabled] = @ssl_enabled unless @ssl_enabled.nil?
-    ssl_options[:trust_strategy] = trust_strategy_for_ca_trusted_fingerprint
+    ssl_options[:enabled] = @ssl_enabled
 
-    return ssl_options unless @ssl_enabled
+    # If the deprecated `ssl` option was explicitly provided, it keeps the same behavior
+    # setting up all the client SSL configs even if ssl => false. Otherwise, it should use
+    # the @ssl_enabled value as it was either explicitly set by the `ssl_enabled` option or
+    # inferred from the hosts scheme.
+    return ssl_options unless @ssl_enabled || original_params.include?('ssl')
 
+    ssl_options[:enabled] = true
     ssl_certificate_authorities, ssl_truststore_path, ssl_certificate, ssl_keystore_path = params.values_at('ssl_certificate_authorities', 'ssl_truststore_path', 'ssl_certificate', 'ssl_keystore_path')
 
     if ssl_certificate_authorities && ssl_truststore_path
@@ -290,24 +296,15 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       ssl_options[:ca_file] = ssl_certificate_authorities.first
     end
 
-    if ssl_truststore_path
-      ssl_options[:truststore] = ssl_truststore_path
-      ssl_options[:truststore_type] = params["ssl_truststore_type"] if params.include?("ssl_truststore_type")
-      ssl_options[:truststore_password] = params["ssl_truststore_password"].value if params.include?("ssl_truststore_password")
-    end
-
-    if ssl_keystore_path
-      logger.debug("Keystore for client certificate", :keystore => ssl_keystore_path)
-      ssl_options[:keystore] = ssl_keystore_path
-      ssl_options[:keystore_type] = params["ssl_keystore_type"] if params.include?("ssl_keystore_type")
-      ssl_options[:keystore_password] = params["ssl_keystore_password"].value if params.include?("ssl_keystore_password")
-    end
+    setup_client_ssl_store(ssl_options, 'truststore', ssl_truststore_path)
+    setup_client_ssl_store(ssl_options, 'keystore', ssl_keystore_path)
+    logger.debug("Keystore for client certificate", :keystore => ssl_keystore_path) if ssl_keystore_path
 
     ssl_key = params["ssl_key"]
     if ssl_certificate && ssl_key
       ssl_options[:client_cert] = ssl_certificate
       ssl_options[:client_key] = ssl_key
-    elsif !!ssl_certificate ^ !!ssl_key
+    elsif !!ssl_certificate || !!ssl_key
       raise(LogStash::ConfigurationError, 'You must set both "ssl_certificate" and "ssl_key" for client authentication')
     end
 
@@ -326,8 +323,18 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     ssl_options[:cipher_suites] = params["ssl_cipher_suites"] if params.include?("ssl_cipher_suites")
     protocols = params['ssl_supported_protocols']
     ssl_options[:protocols] = protocols if protocols&.any?
+    ssl_options[:trust_strategy] = trust_strategy_for_ca_trusted_fingerprint
 
     ssl_options
+  end
+
+  # @param kind is a string [truststore|keystore]
+  def setup_client_ssl_store(ssl_options, kind, store_path)
+    if store_path
+      ssl_options[kind.to_sym] = store_path
+      ssl_options["#{kind}_type".to_sym] = params["ssl_#{kind}_type"] if params.include?("ssl_#{kind}_type")
+      ssl_options["#{kind}_password".to_sym] = params["ssl_#{kind}_password"].value if params.include?("ssl_#{kind}_password")
+    end
   end
 
   def new_client
@@ -477,7 +484,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       end
     end
 
-    params['ssl_enabled'] = @ssl_enabled unless @ssl_enabled.nil?
+    params['ssl_enabled'] = @ssl_enabled
     params['ssl_keystore_path'] = @ssl_keystore_path unless @ssl_keystore_path.nil?
     params['ssl_keystore_password'] = @ssl_keystore_password unless @ssl_keystore_password.nil?
     params['ssl_certificate_authorities'] = @ssl_certificate_authorities unless @ssl_certificate_authorities.nil?

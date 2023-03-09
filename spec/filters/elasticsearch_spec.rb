@@ -594,7 +594,7 @@ describe LogStash::Filters::Elasticsearch do
 
   describe "ca_trusted_fingerprint" do
     let(:ca_trusted_fingerprint) { SecureRandom.hex(32) }
-    let(:config) { {"ca_trusted_fingerprint" => ca_trusted_fingerprint}}
+    let(:config) { {"ssl_enabled" => true, "ca_trusted_fingerprint" => ca_trusted_fingerprint}}
 
     subject(:plugin) { described_class.new(config) }
 
