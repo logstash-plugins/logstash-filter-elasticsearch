@@ -1,3 +1,23 @@
+## 3.15.0
+  - Added SSL settings for: [#168](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/168)
+    - `ssl_enabled`: Enable/disable the SSL settings. If not provided, the value is inferred from the hosts scheme
+    - `ssl_certificate`: OpenSSL-style X.509 certificate file to authenticate the client
+    - `ssl_key`: OpenSSL-style RSA private key that corresponds to the `ssl_certificate`
+    - `ssl_truststore_path`: The JKS truststore to validate the server's certificate
+    - `ssl_truststore_type`: The format of the truststore file
+    - `ssl_truststore_password`: The truststore password
+    - `ssl_keystore_path`: The keystore used to present a certificate to the server
+    - `ssl_keystore_type`: The format of the keystore file
+    - `ssl_keystore_password`: The keystore password
+    - `ssl_cipher_suites`: The list of cipher suites to use
+    - `ssl_supported_protocols`: Supported protocols with versions
+    - `ssl_verification_mode`: Defines how to verify the certificates presented by another party in the TLS connection
+  - Reviewed and deprecated SSL settings to comply with Logstash's naming convention
+    - Deprecated `ssl` in favor of `ssl_enabled`
+    - Deprecated `ca_file` in favor of `ssl_certificate_authorities`
+    - Deprecated `keystore` in favor of `ssl_keystore_path`
+    - Deprecated `keystore_password` in favor of `ssl_keystore_password`
+
 ## 3.14.0
   - Added support for configurable retries with new `retry_on_failure` and `retry_on_status` options [#160](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/160)
 
