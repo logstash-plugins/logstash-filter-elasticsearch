@@ -11,9 +11,6 @@ module LogStash
       attr_reader :client
 
       def initialize(logger, hosts, options = {})
-        ssl = options.fetch(:ssl, false)
-        keystore = options.fetch(:keystore, nil)
-        keystore_password = options.fetch(:keystore_password, nil)
         user = options.fetch(:user, nil)
         password = options.fetch(:password, nil)
         api_key = options.fetch(:api_key, nil)
@@ -28,17 +25,10 @@ module LogStash
         logger.warn "Supplied proxy setting (proxy => '') has no effect" if @proxy.eql?('')
         transport_options[:proxy] = proxy.to_s if proxy && !proxy.eql?('')
 
-        hosts = setup_hosts(hosts, ssl)
+        ssl_options = options.fetch(:ssl, { :enabled => false })
+        ssl_enabled = ssl_options.fetch(:enabled, false)
 
-        ssl_options = {}
-        # set ca_file even if ssl isn't on, since the host can be an https url
-        ssl_options.update(ssl: true, ca_file: options[:ca_file]) if options[:ca_file]
-        ssl_options.update(ssl: true, trust_strategy: options[:ssl_trust_strategy]) if options[:ssl_trust_strategy]
-        if keystore
-          ssl_options[:keystore] = keystore
-          logger.debug("Keystore for client certificate", :keystore => keystore)
-          ssl_options[:keystore_password] = keystore_password.value if keystore_password
-        end
+        hosts = setup_hosts(hosts, ssl_enabled)
 
         client_options = {
                        hosts: hosts,
@@ -59,13 +49,14 @@ module LogStash
 
       private
 
-      def setup_hosts(hosts, ssl)
+      def setup_hosts(hosts, ssl_enabled)
+        hosts = Array(hosts).map { |host| host.to_s } # potential SafeURI#to_s
         hosts.map do |h|
           if h.start_with?('http:/', 'https:/')
             h
           else
             host, port = h.split(':')
-            { host: host, port: port, scheme: (ssl ? 'https' : 'http') }
+            { host: host, port: port, scheme: (ssl_enabled ? 'https' : 'http') }
           end
         end
       end

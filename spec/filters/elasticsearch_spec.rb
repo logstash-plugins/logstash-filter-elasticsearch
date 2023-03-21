@@ -524,7 +524,7 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       context "with ssl" do
-        let(:config) { super().merge({ 'api_key' => LogStash::Util::Password.new('foo:bar'), "ssl" => true }) }
+        let(:config) { super().merge({ 'api_key' => LogStash::Util::Password.new('foo:bar'), "ssl_enabled" => true }) }
 
         it "should set authorization" do
           plugin.register
@@ -594,7 +594,7 @@ describe LogStash::Filters::Elasticsearch do
 
   describe "ca_trusted_fingerprint" do
     let(:ca_trusted_fingerprint) { SecureRandom.hex(32) }
-    let(:config) { {"ca_trusted_fingerprint" => ca_trusted_fingerprint}}
+    let(:config) { {"ssl_enabled" => true, "ca_trusted_fingerprint" => ca_trusted_fingerprint}}
 
     subject(:plugin) { described_class.new(config) }
 
@@ -630,8 +630,9 @@ describe LogStash::Filters::Elasticsearch do
 
     let(:config) do
       {
-        'keystore' => keystore_path,
-        'keystore_password' => keystore_password,
+        'hosts' => 'https://localhost:9200',
+        'ssl_keystore_path' => keystore_path,
+        'ssl_keystore_password' => keystore_password,
       }
     end
 

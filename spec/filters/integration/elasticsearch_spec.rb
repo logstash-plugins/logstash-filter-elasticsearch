@@ -29,7 +29,7 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
 
   let(:config) do
     config = ELASTIC_SECURITY_ENABLED ? base_config.merge(credentials) : base_config
-    config = { 'ca_file' => ca_path }.merge(config) if SECURE_INTEGRATION
+    config = { 'ssl_certificate_authorities' => ca_path }.merge(config) if SECURE_INTEGRATION
     config
   end
 
@@ -92,7 +92,7 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
   context 'setting host:port (and ssl)' do # reproduces GH-155
 
     let(:config) do
-      super().merge "hosts" => [ESHelper.get_host_port], "ssl" => SECURE_INTEGRATION
+      super().merge "hosts" => [ESHelper.get_host_port], "ssl_enabled" => SECURE_INTEGRATION
     end
 
     it "works" do
@@ -110,9 +110,9 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
       let(:config) do
         super().merge(
           "hosts" => [ESHelper.get_host_port],
-          "keystore" => keystore_path,
-          "keystore_password" => keystore_password,
-          "ssl" => true,
+          "ssl_keystore_path" => keystore_path,
+          "ssl_keystore_password" => keystore_password,
+          "ssl_enabled" => true,
           "fields" => { "this" => "contents", "response" => "four-oh-four" }
         )
       end
@@ -132,7 +132,7 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
 
         let(:config) do
           bc = super()
-          bc.delete('ca_file')
+          bc.delete('ssl_certificate_authorities')
           bc.merge({
             'ca_trusted_fingerprint' => ca_trusted_fingerprint,
             'fields' => { "this" => "contents", "response" => "four-oh-four" }
