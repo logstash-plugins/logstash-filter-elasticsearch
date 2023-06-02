@@ -1,3 +1,6 @@
+## 3.15.1
+  - Fixes a regression introduced in 3.15.0 which could prevent a connection from being established to Elasticsearch in some SSL configurations
+
 ## 3.15.0
   - Added SSL settings for: [#168](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/168)
     - `ssl_enabled`: Enable/disable the SSL settings. If not provided, the value is inferred from the hosts scheme
