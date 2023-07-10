@@ -1,3 +1,6 @@
+## 3.15.2
+  - Added default value `*` to `query`.
+  
 ## 3.15.1
   - Fixes a regression introduced in 3.15.0 which could prevent a connection from being established to Elasticsearch in some SSL configurations
 

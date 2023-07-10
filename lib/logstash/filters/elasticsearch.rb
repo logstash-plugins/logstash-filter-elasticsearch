@@ -20,7 +20,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # Elasticsearch query string. Read the Elasticsearch query string documentation.
   # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/master/query-dsl-query-string-query.html#query-string-syntax
-  config :query, :validate => :string
+  config :query, :validate => :string, :default => "*"
 
   # File path to elasticsearch query in DSL format. Read the Elasticsearch query documentation
   # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html

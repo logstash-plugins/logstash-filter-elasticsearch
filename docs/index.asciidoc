@@ -315,7 +315,7 @@ environment variables e.g. `proxy => '${LS_PROXY:}'`.
 ===== `query` 
 
   * Value type is <<string,string>>
-  * There is no default value for this setting.
+  * Default value is `*`.
 
 Elasticsearch query string. More information is available in the
 {ref}/query-dsl-query-string-query.html#query-string-syntax[Elasticsearch query
