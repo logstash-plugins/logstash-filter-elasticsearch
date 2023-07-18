@@ -20,7 +20,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # Elasticsearch query string. Read the Elasticsearch query string documentation.
   # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/master/query-dsl-query-string-query.html#query-string-syntax
-  config :query, :validate => :string, :default => "*"
+  config :query, :validate => :string
 
   # File path to elasticsearch query in DSL format. Read the Elasticsearch query documentation
   # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html
@@ -170,6 +170,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       @query_dsl = file.read
     end
 
+    validate_query_settings
     fill_hosts_from_cloud_id
     setup_ssl_params!
     validate_authentication
@@ -389,6 +390,16 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   def hosts_default?(hosts)
     hosts.is_a?(Array) && hosts.size == 1 && !original_params.key?('hosts')
+  end
+
+  def validate_query_settings
+    unless @query || @query_template
+      raise LogStash::ConfigurationError, "Both `query` and `query_template` are empty. Please either set `query` or `query_template`."
+    end
+
+    if @query && @query_template
+      raise LogStash::ConfigurationError, "Both `query` and `query_template` are set. Please either set `query` or `query_template`."
+    end
   end
 
   def validate_authentication

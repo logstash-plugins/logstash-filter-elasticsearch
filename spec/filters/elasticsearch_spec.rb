@@ -15,9 +15,11 @@ describe LogStash::Filters::Elasticsearch do
 
   context "registration" do
 
-    let(:plugin) { LogStash::Plugin.lookup("filter", "elasticsearch").new({}) }
+    let(:plugin) { LogStash::Plugin.lookup("filter", "elasticsearch").new(config) }
 
     context "against authentic Elasticsearch" do
+      let(:config) { { "query" => "*" } }
+
       before do
         allow(plugin).to receive(:test_connection!)
       end
@@ -28,6 +30,7 @@ describe LogStash::Filters::Elasticsearch do
     end
 
     context "against not authentic Elasticsearch" do
+      let(:config) { { "query" => "*" } }
       let(:failing_client) do
         client = double("client")
         allow(client).to receive(:ping).and_raise Elasticsearch::UnsupportedProductError
@@ -42,6 +45,19 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       it "should raise ConfigurationError" do
+        expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
+      end
+    end
+
+    context "query settings" do
+      it "raise an exception when query and query_template are empty" do
+        plugin = described_class.new({})
+        expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
+      end
+
+      it "raise an exception when query and query_template are set" do
+        config = { "query" => "*", "query_template" => File.join(File.dirname(__FILE__), "fixtures", "query_template_unicode.json") }
+        plugin = described_class.new(config)
         expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
       end
     end
@@ -594,7 +610,7 @@ describe LogStash::Filters::Elasticsearch do
 
   describe "ca_trusted_fingerprint" do
     let(:ca_trusted_fingerprint) { SecureRandom.hex(32) }
-    let(:config) { {"ssl_enabled" => true, "ca_trusted_fingerprint" => ca_trusted_fingerprint}}
+    let(:config) { {"ssl_enabled" => true, "ca_trusted_fingerprint" => ca_trusted_fingerprint, "query" => "*"}}
 
     subject(:plugin) { described_class.new(config) }
 
@@ -633,6 +649,7 @@ describe LogStash::Filters::Elasticsearch do
         'hosts' => 'https://localhost:9200',
         'ssl_keystore_path' => keystore_path,
         'ssl_keystore_password' => keystore_password,
+        'query' => '*'
       }
     end
 
@@ -663,7 +680,7 @@ describe LogStash::Filters::Elasticsearch do
 
   describe "defaults" do
 
-    let(:config) { Hash.new }
+    let(:config) { {"query" => "*"} }
     let(:plugin) { described_class.new(config) }
 
     before { allow(plugin).to receive(:test_connection!) }

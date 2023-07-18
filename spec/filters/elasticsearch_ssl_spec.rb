@@ -5,7 +5,7 @@ require "logstash/codecs/base"
 describe "SSL options" do
   let(:es_client_double) { double("Elasticsearch::Client #{self.inspect}") }
   let(:hosts) {["localhost"]}
-  let(:settings) { { "ssl_enabled" => true, "hosts" => hosts } }
+  let(:settings) { { "ssl_enabled" => true, "hosts" => hosts, "query" => "*" } }
 
   subject do
     require "logstash/filters/elasticsearch"

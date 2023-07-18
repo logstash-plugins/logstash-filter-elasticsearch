@@ -315,11 +315,12 @@ environment variables e.g. `proxy => '${LS_PROXY:}'`.
 ===== `query` 
 
   * Value type is <<string,string>>
-  * Default value is `*`.
+  * There is no default value for this setting.
 
 Elasticsearch query string. More information is available in the
 {ref}/query-dsl-query-string-query.html#query-string-syntax[Elasticsearch query
 string documentation].
+Either `query` or `query_template` is mandatory.
 
 
 [id="plugins-{type}s-{plugin}-query_template"]
@@ -330,6 +331,7 @@ string documentation].
 
 File path to elasticsearch query in DSL format. More information is available in
 the {ref}/query-dsl.html[Elasticsearch query documentation].
+Either `query` or `query_template` is mandatory.
 
 [id="plugins-{type}s-{plugin}-result_size"]
 ===== `result_size` 
