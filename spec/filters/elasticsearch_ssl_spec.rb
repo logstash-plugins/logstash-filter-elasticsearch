@@ -36,7 +36,8 @@ describe "SSL options" do
     context "false and cloud_id resolved host is https" do
       let(:settings) {{
         "ssl_enabled" => false,
-        "cloud_id" => "sample:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlvJGFjMzFlYmI5MDI0MTc3MzE1NzA0M2MzNGZkMjZmZDQ2OjkyNDMkYTRjMDYyMzBlNDhjOGZjZTdiZTg4YTA3NGEzYmIzZTA6OTI0NA=="
+        "cloud_id" => "sample:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlvJGFjMzFlYmI5MDI0MTc3MzE1NzA0M2MzNGZkMjZmZDQ2OjkyNDMkYTRjMDYyMzBlNDhjOGZjZTdiZTg4YTA3NGEzYmIzZTA6OTI0NA==",
+        "query" => "*"
       }}
 
       it "should not infer the ssl_enabled value" do
@@ -82,7 +83,8 @@ describe "SSL options" do
 
     context "and cloud_id resolved host is https" do
       let(:settings) {{
-        "cloud_id" => "sample:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlvJGFjMzFlYmI5MDI0MTc3MzE1NzA0M2MzNGZkMjZmZDQ2OjkyNDMkYTRjMDYyMzBlNDhjOGZjZTdiZTg4YTA3NGEzYmIzZTA6OTI0NA=="
+        "cloud_id" => "sample:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlvJGFjMzFlYmI5MDI0MTc3MzE1NzA0M2MzNGZkMjZmZDQ2OjkyNDMkYTRjMDYyMzBlNDhjOGZjZTdiZTg4YTA3NGEzYmIzZTA6OTI0NA==",
+        "query" => "*"
       }}
 
       it "should infer the ssl_enabled value to false" do

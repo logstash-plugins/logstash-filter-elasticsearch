@@ -394,11 +394,11 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   def validate_query_settings
     unless @query || @query_template
-      raise LogStash::ConfigurationError, "Both `query` and `query_template` are empty. Please either set `query` or `query_template`."
+      raise LogStash::ConfigurationError, "Both `query` and `query_template` are empty. Require either `query` or `query_template`."
     end
 
     if @query && @query_template
-      raise LogStash::ConfigurationError, "Both `query` and `query_template` are set. Please either set `query` or `query_template`."
+      raise LogStash::ConfigurationError, "Both `query` and `query_template` are set. Use either `query` or `query_template`."
     end
   end
 
