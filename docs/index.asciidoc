@@ -320,7 +320,7 @@ environment variables e.g. `proxy => '${LS_PROXY:}'`.
 Elasticsearch query string. More information is available in the
 {ref}/query-dsl-query-string-query.html#query-string-syntax[Elasticsearch query
 string documentation].
-Either `query` or `query_template` is mandatory.
+Use either `query` or `query_template`.
 
 
 [id="plugins-{type}s-{plugin}-query_template"]
@@ -331,7 +331,7 @@ Either `query` or `query_template` is mandatory.
 
 File path to elasticsearch query in DSL format. More information is available in
 the {ref}/query-dsl.html[Elasticsearch query documentation].
-Either `query` or `query_template` is mandatory.
+Use either `query` or `query_template`.
 
 [id="plugins-{type}s-{plugin}-result_size"]
 ===== `result_size` 
