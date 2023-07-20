@@ -55,12 +55,10 @@ describe LogStash::Filters::Elasticsearch do
         expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
       end
 
-      it "gives warning when query and query_template are set" do
+      it "raise an exception when query and query_template are set" do
         config = { "query" => "*", "query_template" => File.join(File.dirname(__FILE__), "fixtures", "query_template_unicode.json") }
         plugin = described_class.new(config)
-        allow(plugin).to receive(:test_connection!)
-        expect(plugin.logger).to receive(:warn)
-        plugin.register
+        expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
       end
     end
   end

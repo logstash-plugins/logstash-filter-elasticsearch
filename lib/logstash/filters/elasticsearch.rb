@@ -398,7 +398,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     end
 
     if @query && @query_template
-      @logger.warn("Both `query` and `query_template` are set. `query_template` will take the precedence over `query`.")
+      raise LogStash::ConfigurationError, "Both `query` and `query_template` are set. Use either `query` or `query_template`."
     end
   end
 
