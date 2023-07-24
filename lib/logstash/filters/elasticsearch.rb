@@ -170,6 +170,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       @query_dsl = file.read
     end
 
+    validate_query_settings
     fill_hosts_from_cloud_id
     setup_ssl_params!
     validate_authentication
@@ -389,6 +390,16 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   def hosts_default?(hosts)
     hosts.is_a?(Array) && hosts.size == 1 && !original_params.key?('hosts')
+  end
+
+  def validate_query_settings
+    unless @query || @query_template
+      raise LogStash::ConfigurationError, "Both `query` and `query_template` are empty. Require either `query` or `query_template`."
+    end
+
+    if @query && @query_template
+      raise LogStash::ConfigurationError, "Both `query` and `query_template` are set. Use either `query` or `query_template`."
+    end
   end
 
   def validate_authentication

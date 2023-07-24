@@ -1,3 +1,6 @@
+## 3.15.2
+  - Added checking for `query` and `query_template`. [#171](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/171)
+  
 ## 3.15.1
   - Fixes a regression introduced in 3.15.0 which could prevent a connection from being established to Elasticsearch in some SSL configurations
 
