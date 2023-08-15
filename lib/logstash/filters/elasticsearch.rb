@@ -4,6 +4,7 @@ require "logstash/namespace"
 require "logstash/json"
 require 'logstash/plugin_mixins/ca_trusted_fingerprint_support'
 require "logstash/plugin_mixins/normalize_config_support"
+require "monitor"
 
 require_relative "elasticsearch/client"
 require_relative "elasticsearch/patches/_elasticsearch_transport_http_manticore"
@@ -139,7 +140,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   include LogStash::PluginMixins::NormalizeConfigSupport
 
-  attr_reader :clients_pool
+  include MonitorMixin
+  attr_reader :shared_client
 
   ##
   # @override to handle proxy => '' as if none was set
@@ -159,8 +161,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def register
-    @clients_pool = java.util.concurrent.ConcurrentHashMap.new
-
     #Load query if it exists
     if @query_template
       if File.zero?(@query_template)
@@ -352,7 +352,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def get_client
-    @clients_pool.computeIfAbsent(Thread.current, lambda { |x| new_client })
+    @shared_client || synchronize do
+      @shared_client ||= new_client
+    end
   end
 
   # get an array of path elements from a path reference
