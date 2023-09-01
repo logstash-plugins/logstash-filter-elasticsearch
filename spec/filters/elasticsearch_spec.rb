@@ -606,6 +606,45 @@ describe LogStash::Filters::Elasticsearch do
         expect( extract_transport(client).options[:retry_on_status] ).to eq([500, 502, 503, 504])
       end
     end
+
+    describe "Elastic Api Header" do
+      let(:cluster_info) { {"version" => {"number" => "7.5.0", "build_flavor" => build_flavor}, "tagline" => "You Know, for Search"} }
+      let(:es_client) { double("es_client") }
+
+      before do
+        plugin.register
+        expect(es_client).to receive(:info).and_return(cluster_info)
+      end
+
+      context "serverless" do
+        let(:build_flavor) { "serverless" }
+
+        it 'propagates header to es client' do
+          client = plugin.send(:get_client)
+          client.instance_variable_set(:@client, es_client)
+
+          expect(es_client).to receive(:search).with(anything) do |params|
+            expect(params[:headers]).to match(hash_including(LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER))
+          end
+          client.search({})
+        end
+      end
+
+      context "stateful" do
+        let(:build_flavor) { "default" }
+
+        it 'does not propagate header to es client' do
+          client = plugin.send(:get_client)
+          client.instance_variable_set(:@client, es_client)
+
+          expect(es_client).to receive(:search).with(anything) do |params|
+            expect(params[:headers]).to be_nil
+          end
+          client.search({})
+        end
+      end
+
+    end
   end
 
   describe "ca_trusted_fingerprint" do

@@ -47,7 +47,7 @@ module LogStash
       end
 
       def search(params)
-        params[:headers] = DEFAULT_EAV_HEADER if params && serverless?
+        params[:headers] = DEFAULT_EAV_HEADER.merge(params[:headers] || {}) if params && serverless?
         @client.search(params)
       end
 
