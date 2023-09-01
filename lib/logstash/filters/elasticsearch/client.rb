@@ -10,6 +10,9 @@ module LogStash
 
       attr_reader :client
 
+      BUILD_FLAVOR_SERVERLESS = 'serverless'.freeze
+      DEFAULT_EAV_HEADER = { "Elastic-Api-Version" => "2023-10-31" }.freeze
+
       def initialize(logger, hosts, options = {})
         user = options.fetch(:user, nil)
         password = options.fetch(:password, nil)
@@ -44,7 +47,19 @@ module LogStash
       end
 
       def search(params)
+        params[:headers] = DEFAULT_EAV_HEADER if params && serverless?
         @client.search(params)
+      end
+
+      def info
+        @client.info
+      end
+
+      def build_flavor
+        @build_flavor ||= info&.dig('version', 'build_flavor')
+      end
+      def serverless?
+        build_flavor == BUILD_FLAVOR_SERVERLESS
       end
 
       private
