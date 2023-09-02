@@ -46,8 +46,8 @@ module LogStash
         @client = ::Elasticsearch::Client.new(client_options)
       end
 
-      def search(params)
-        params[:headers] = DEFAULT_EAV_HEADER.merge(params[:headers] || {}) if params && serverless?
+      def search(params={})
+        params[:headers] = DEFAULT_EAV_HEADER.merge(params[:headers] || {}) if serverless?
         @client.search(params)
       end
 
