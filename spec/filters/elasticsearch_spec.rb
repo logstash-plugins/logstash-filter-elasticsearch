@@ -456,7 +456,15 @@ describe LogStash::Filters::Elasticsearch do
       # we currently rely on the threadsafety guarantees provided by Manticore
       # this spec is a safeguard to trigger an assessment of thread-safety should
       # we choose a different transport adapter in the future.
-      expect(extract_transport(client).to_s).to include('Manticore')
+      transport_class = extract_transport(client).options.fetch(:transport_class)
+      expect(transport_class).to equal ::Elasticsearch::Transport::Transport::HTTP::Manticore
+    end
+
+    it 'uses a client with sufficient connection pool size' do
+      client = plugin.send(:get_client).client
+      transport_options = extract_transport(client).options.fetch(:transport_options)
+      # pool_max and pool_max_per_route are manticore-specific transport options
+      expect(transport_options).to include(:pool_max => 1000, :pool_max_per_route => 100)
     end
 
     it 'uses a single shared client across threads' do
@@ -715,9 +723,9 @@ describe LogStash::Filters::Elasticsearch do
     end
 
     it "should read and send non-ascii query" do
-      expect(client).to receive(:search).with(
+      expect(client).to receive(:search).with({
           :body => { "query" => { "terms" => { "lock" => [ "잠금", "uzávěr" ] } } },
-          :index => "")
+          :index => ""})
 
       plugin.filter(LogStash::Event.new)
     end
