@@ -22,6 +22,9 @@ module LogStash
         transport_options[:headers].merge!(setup_api_key(api_key))
         transport_options[:headers].merge!({ 'user-agent' => "#{user_agent}" })
 
+        transport_options[:pool_max] = 1000
+        transport_options[:pool_max_per_route] = 100
+
         logger.warn "Supplied proxy setting (proxy => '') has no effect" if @proxy.eql?('')
         transport_options[:proxy] = proxy.to_s if proxy && !proxy.eql?('')
 
