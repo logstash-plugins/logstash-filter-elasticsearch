@@ -91,21 +91,6 @@ describe LogStash::Filters::Elasticsearch do
       Thread.current[:filter_elasticsearch_client] = nil
     end
 
-    # Since the Elasticsearch Ruby client is not thread safe
-    # and under high load we can get error with the connection pool
-    # we have decided to create a new instance per worker thread which
-    # will be lazy created on the first call to `#filter`
-    #
-    # I am adding a simple test case for future changes
-    it "uses a different connection object per thread wait" do
-      expect(plugin.clients_pool.size).to eq(0)
-
-      Thread.new { plugin.filter(event) }.join
-      Thread.new { plugin.filter(event) }.join
-
-      expect(plugin.clients_pool.size).to eq(2)
-    end
-
     it "should enhance the current event with new data" do
       plugin.filter(event)
       expect(event.get("code")).to eq(404)
@@ -466,6 +451,32 @@ describe LogStash::Filters::Elasticsearch do
       Thread.current[:filter_elasticsearch_client] = nil
     end
 
+    it 'uses a threadsafe transport adapter' do
+      client = plugin.send(:get_client).client
+      # we currently rely on the threadsafety guarantees provided by Manticore
+      # this spec is a safeguard to trigger an assessment of thread-safety should
+      # we choose a different transport adapter in the future.
+      transport_class = extract_transport(client).options.fetch(:transport_class)
+      expect(transport_class).to equal ::Elasticsearch::Transport::Transport::HTTP::Manticore
+    end
+
+    it 'uses a client with sufficient connection pool size' do
+      client = plugin.send(:get_client).client
+      transport_options = extract_transport(client).options.fetch(:transport_options)
+      # pool_max and pool_max_per_route are manticore-specific transport options
+      expect(transport_options).to include(:pool_max => 1000, :pool_max_per_route => 100)
+    end
+
+    it 'uses a single shared client across threads' do
+      q = Queue.new
+      10.times.map do
+        Thread.new(plugin) { |instance| q.push instance.send(:get_client) }
+      end.map(&:join)
+
+      first = q.pop
+      expect(q.pop).to be(first) until q.empty?
+    end
+
     describe "cloud.id" do
       let(:valid_cloud_id) do
         'sample:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlvJGFjMzFlYmI5MDI0MTc3MzE1NzA0M2MzNGZkMjZmZDQ2OjkyNDMkYTRjMDYyMzBlNDhjOGZjZTdiZTg4YTA3NGEzYmIzZTA6OTI0NA=='
@@ -751,9 +762,9 @@ describe LogStash::Filters::Elasticsearch do
     end
 
     it "should read and send non-ascii query" do
-      expect(client).to receive(:search).with(
+      expect(client).to receive(:search).with({
           :body => { "query" => { "terms" => { "lock" => [ "잠금", "uzávěr" ] } } },
-          :index => "")
+          :index => ""})
 
       plugin.filter(LogStash::Event.new)
     end
