@@ -473,6 +473,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   def test_connection!
     begin
       get_client.client.ping
+      get_client.serverless?
     rescue Elasticsearch::UnsupportedProductError
       raise LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch"
     end
