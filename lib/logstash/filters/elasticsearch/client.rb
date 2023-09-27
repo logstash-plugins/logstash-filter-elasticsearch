@@ -61,8 +61,9 @@ module LogStash
       def build_flavor
         @build_flavor ||= info&.dig('version', 'build_flavor')
       end
+
       def serverless?
-        build_flavor == BUILD_FLAVOR_SERVERLESS
+        @is_serverless ||= (build_flavor == BUILD_FLAVOR_SERVERLESS)
       end
 
       private
