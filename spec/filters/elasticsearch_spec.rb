@@ -22,6 +22,7 @@ describe LogStash::Filters::Elasticsearch do
 
       before do
         allow(plugin).to receive(:test_connection!)
+        allow(plugin).to receive(:test_serverless_connection!)
       end
       
       it "should not raise an exception" do
@@ -45,6 +46,26 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       it "should raise ConfigurationError" do
+        expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
+      end
+    end
+
+    context "against serverless Elasticsearch" do
+      let(:config) { { "query" => "*" } }
+      let(:filter_client) { double("filter_client") }
+      let(:es_client) { double("es_client") }
+
+      before do
+        allow(plugin).to receive(:test_connection!)
+        allow(plugin).to receive(:get_client).and_return(filter_client)
+        allow(filter_client).to receive(:serverless?).and_return(true)
+        allow(filter_client).to receive(:client).and_return(es_client)
+        allow(es_client).to receive(:info).with(a_hash_including(:headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER)).and_raise(
+          Elasticsearch::Transport::Transport::Errors::BadRequest.new
+        )
+      end
+
+      it "raises an exception when Elastic Api Version is not supported" do
         expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
       end
     end
@@ -84,6 +105,7 @@ describe LogStash::Filters::Elasticsearch do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
       allow(client).to receive(:search).and_return(response)
       allow(plugin).to receive(:test_connection!)
+      allow(plugin).to receive(:test_serverless_connection!)
       plugin.register
     end
 
@@ -447,6 +469,7 @@ describe LogStash::Filters::Elasticsearch do
 
     before(:each) do
       allow(plugin).to receive(:test_connection!)
+      allow(plugin).to receive(:test_serverless_connection!)
     end
 
     after(:each) do
@@ -668,7 +691,10 @@ describe LogStash::Filters::Elasticsearch do
 
     if Gem::Version.create(LOGSTASH_VERSION) >= Gem::Version.create("8.3.0")
       context 'the generated trust_strategy' do
-        before(:each) { allow(plugin).to receive(:test_connection!) }
+        before(:each) do
+          allow(plugin).to receive(:test_connection!)
+          allow(plugin).to receive(:test_serverless_connection!)
+        end
 
         it 'is passed to the Manticore client' do
           expect(Manticore::Client).to receive(:new)
@@ -707,7 +733,10 @@ describe LogStash::Filters::Elasticsearch do
 
     subject(:plugin) { described_class.new(config) }
 
-    before(:each) { allow(plugin).to receive(:test_connection!) }
+    before(:each) do
+      allow(plugin).to receive(:test_connection!)
+      allow(plugin).to receive(:test_serverless_connection!)
+    end
 
     it 'is passed to the Manticore client' do
       expect(Manticore::Client).to receive(:new)
@@ -735,7 +764,10 @@ describe LogStash::Filters::Elasticsearch do
     let(:config) { {"query" => "*"} }
     let(:plugin) { described_class.new(config) }
 
-    before { allow(plugin).to receive(:test_connection!) }
+    before do
+      allow(plugin).to receive(:test_connection!)
+      allow(plugin).to receive(:test_serverless_connection!)
+    end
 
     it "should set localhost:9200 as hosts" do
       plugin.register
@@ -760,6 +792,7 @@ describe LogStash::Filters::Elasticsearch do
     before(:each) do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
       allow(plugin).to receive(:test_connection!)
+      allow(plugin).to receive(:test_serverless_connection!)
       plugin.register
     end
 

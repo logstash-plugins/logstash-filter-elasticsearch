@@ -179,6 +179,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     @hosts = Array(@hosts).map { |host| host.to_s } # potential SafeURI#to_s
 
     test_connection!
+    test_serverless_connection!
   end # def register
 
   def filter(event)
@@ -473,8 +474,16 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   def test_connection!
     begin
       get_client.client.ping
-      get_client.serverless?
     rescue Elasticsearch::UnsupportedProductError
+      raise LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch"
+    end
+  end
+
+  def test_serverless_connection!
+    begin
+      get_client.client.info(:headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER ) if get_client.serverless?
+    rescue => e
+      @logger.error("Failed to retrieve Elasticsearch info", message: e.message, exception: e.class, backtrace: e.backtrace)
       raise LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch"
     end
   end
