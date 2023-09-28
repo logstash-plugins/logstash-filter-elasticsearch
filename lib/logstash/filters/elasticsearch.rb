@@ -480,12 +480,10 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def test_serverless_connection!
-    begin
-      get_client.client.info(:headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER ) if get_client.serverless?
-    rescue => e
-      @logger.error("Failed to retrieve Elasticsearch info", message: e.message, exception: e.class, backtrace: e.backtrace)
-      raise LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch"
-    end
+    get_client.client.info(:headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER ) if get_client.serverless?
+  rescue => e
+    @logger.error("Failed to retrieve Elasticsearch info", message: e.message, exception: e.class, backtrace: e.backtrace)
+    raise LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch"
   end
 
   def setup_ssl_params!
