@@ -20,7 +20,8 @@ module LogStash
         proxy = options.fetch(:proxy, nil)
         user_agent = options[:user_agent]
 
-        transport_options = {:headers => {}}
+        transport_options = { }
+        transport_options[:headers] = options.fetch(:serverless, false) ?  DEFAULT_EAV_HEADER.dup : {}
         transport_options[:headers].merge!(setup_basic_auth(user, password))
         transport_options[:headers].merge!(setup_api_key(api_key))
         transport_options[:headers].merge!({ 'user-agent' => "#{user_agent}" })
@@ -50,7 +51,6 @@ module LogStash
       end
 
       def search(params={})
-        params[:headers] = DEFAULT_EAV_HEADER.merge(params[:headers] || {}) if serverless?
         @client.search(params)
       end
 

@@ -22,7 +22,7 @@ describe LogStash::Filters::Elasticsearch do
 
       before do
         allow(plugin).to receive(:test_connection!)
-        allow(plugin).to receive(:test_serverless_connection!)
+        allow(plugin).to receive(:setup_serverless)
       end
       
       it "should not raise an exception" do
@@ -105,7 +105,7 @@ describe LogStash::Filters::Elasticsearch do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
       allow(client).to receive(:search).and_return(response)
       allow(plugin).to receive(:test_connection!)
-      allow(plugin).to receive(:test_serverless_connection!)
+      allow(plugin).to receive(:setup_serverless)
       plugin.register
     end
 
@@ -469,7 +469,7 @@ describe LogStash::Filters::Elasticsearch do
 
     before(:each) do
       allow(plugin).to receive(:test_connection!)
-      allow(plugin).to receive(:test_serverless_connection!)
+      allow(plugin).to receive(:setup_serverless)
     end
 
     after(:each) do
@@ -642,45 +642,47 @@ describe LogStash::Filters::Elasticsearch do
         expect( extract_transport(client).options[:retry_on_status] ).to eq([500, 502, 503, 504])
       end
     end
+  end
 
-    describe "Elastic Api Header" do
-      let(:cluster_info) { {"version" => {"number" => "7.5.0", "build_flavor" => build_flavor}, "tagline" => "You Know, for Search"} }
-      let(:es_client) { double("es_client") }
+  describe "Elastic Api Header" do
+    let(:config) { {"query" => "*"} }
+    let(:plugin) { described_class.new(config) }
+    let(:headers) {{'x-elastic-product' => 'Elasticsearch'}}
+    let(:cluster_info) { {"version" => {"number" => "8.10.0", "build_flavor" => build_flavor}, "tagline" => "You Know, for Search"} }
+    let(:mock_resp) { MockResponse.new(200, cluster_info, headers) }
+
+    before do
+      expect(plugin).to receive(:test_connection!)
+    end
+
+    context "serverless" do
+      let(:build_flavor) { "serverless" }
 
       before do
+        allow_any_instance_of(Elasticsearch::Client).to receive(:perform_request).with(any_args).and_return(mock_resp)
+      end
+
+      it 'propagates header to es client' do
         plugin.register
-        expect(es_client).to receive(:info).and_return(cluster_info)
+        client = plugin.send(:get_client).client
+        expect( extract_transport(client).options[:transport_options][:headers] ).to match hash_including("Elastic-Api-Version" => "2023-10-31")
       end
-
-      context "serverless" do
-        let(:build_flavor) { "serverless" }
-
-        it 'propagates header to es client' do
-          client = plugin.send(:get_client)
-          client.instance_variable_set(:@client, es_client)
-
-          expect(es_client).to receive(:search).with(anything) do |params|
-            expect(params[:headers]).to match(hash_including(LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER))
-          end
-          client.search({})
-        end
-      end
-
-      context "stateful" do
-        let(:build_flavor) { "default" }
-
-        it 'does not propagate header to es client' do
-          client = plugin.send(:get_client)
-          client.instance_variable_set(:@client, es_client)
-
-          expect(es_client).to receive(:search).with(anything) do |params|
-            expect(params[:headers]).to be_nil
-          end
-          client.search({})
-        end
-      end
-
     end
+
+    context "stateful" do
+      let(:build_flavor) { "default" }
+
+      before do
+        expect_any_instance_of(Elasticsearch::Client).to receive(:perform_request).with(any_args).and_return(mock_resp)
+      end
+
+      it 'does not propagate header to es client' do
+        plugin.register
+        client = plugin.send(:get_client).client
+        expect( extract_transport(client).options[:transport_options][:headers] ).to match hash_not_including("Elastic-Api-Version" => "2023-10-31")
+      end
+    end
+
   end
 
   describe "ca_trusted_fingerprint" do
@@ -693,7 +695,7 @@ describe LogStash::Filters::Elasticsearch do
       context 'the generated trust_strategy' do
         before(:each) do
           allow(plugin).to receive(:test_connection!)
-          allow(plugin).to receive(:test_serverless_connection!)
+          allow(plugin).to receive(:setup_serverless)
         end
 
         it 'is passed to the Manticore client' do
@@ -735,7 +737,7 @@ describe LogStash::Filters::Elasticsearch do
 
     before(:each) do
       allow(plugin).to receive(:test_connection!)
-      allow(plugin).to receive(:test_serverless_connection!)
+      allow(plugin).to receive(:setup_serverless)
     end
 
     it 'is passed to the Manticore client' do
@@ -766,7 +768,7 @@ describe LogStash::Filters::Elasticsearch do
 
     before do
       allow(plugin).to receive(:test_connection!)
-      allow(plugin).to receive(:test_serverless_connection!)
+      allow(plugin).to receive(:setup_serverless)
     end
 
     it "should set localhost:9200 as hosts" do
@@ -792,7 +794,7 @@ describe LogStash::Filters::Elasticsearch do
     before(:each) do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
       allow(plugin).to receive(:test_connection!)
-      allow(plugin).to receive(:test_serverless_connection!)
+      allow(plugin).to receive(:setup_serverless)
       plugin.register
     end
 
@@ -810,4 +812,21 @@ describe LogStash::Filters::Elasticsearch do
     client.transport.respond_to?(:transport) ? client.transport.transport : client.transport
   end
 
+  class MockResponse
+    attr_reader :code, :headers
+
+    def initialize(code = 200, body = nil, headers = {})
+      @code = code
+      @body = body
+      @headers = headers
+    end
+
+    def body
+      @body
+    end
+
+    def status
+      @code
+    end
+  end
 end
