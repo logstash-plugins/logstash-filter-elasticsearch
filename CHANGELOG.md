@@ -1,3 +1,6 @@
+## 3.16.1
+  - Version bump to pick up doc fix in [#172](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/172)
+
 ## 3.16.0
   - Added request header `Elastic-Api-Version` for serverless [#174](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/174)
 
