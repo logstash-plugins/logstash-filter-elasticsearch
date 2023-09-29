@@ -10,6 +10,9 @@ module LogStash
 
       attr_reader :client
 
+      BUILD_FLAVOR_SERVERLESS = 'serverless'.freeze
+      DEFAULT_EAV_HEADER = { "Elastic-Api-Version" => "2023-10-31" }.freeze
+
       def initialize(logger, hosts, options = {})
         user = options.fetch(:user, nil)
         password = options.fetch(:password, nil)
@@ -17,7 +20,8 @@ module LogStash
         proxy = options.fetch(:proxy, nil)
         user_agent = options[:user_agent]
 
-        transport_options = {:headers => {}}
+        transport_options = { }
+        transport_options[:headers] = options.fetch(:serverless, false) ?  DEFAULT_EAV_HEADER.dup : {}
         transport_options[:headers].merge!(setup_basic_auth(user, password))
         transport_options[:headers].merge!(setup_api_key(api_key))
         transport_options[:headers].merge!({ 'user-agent' => "#{user_agent}" })
@@ -46,8 +50,20 @@ module LogStash
         @client = ::Elasticsearch::Client.new(client_options)
       end
 
-      def search(params)
+      def search(params={})
         @client.search(params)
+      end
+
+      def info
+        @client.info
+      end
+
+      def build_flavor
+        @build_flavor ||= info&.dig('version', 'build_flavor')
+      end
+
+      def serverless?
+        @is_serverless ||= (build_flavor == BUILD_FLAVOR_SERVERLESS)
       end
 
       private

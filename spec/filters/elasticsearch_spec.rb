@@ -22,6 +22,7 @@ describe LogStash::Filters::Elasticsearch do
 
       before do
         allow(plugin).to receive(:test_connection!)
+        allow(plugin).to receive(:setup_serverless)
       end
       
       it "should not raise an exception" do
@@ -45,6 +46,26 @@ describe LogStash::Filters::Elasticsearch do
       end
 
       it "should raise ConfigurationError" do
+        expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
+      end
+    end
+
+    context "against serverless Elasticsearch" do
+      let(:config) { { "query" => "*" } }
+      let(:filter_client) { double("filter_client") }
+      let(:es_client) { double("es_client") }
+
+      before do
+        allow(plugin).to receive(:test_connection!)
+        allow(plugin).to receive(:get_client).and_return(filter_client)
+        allow(filter_client).to receive(:serverless?).and_return(true)
+        allow(filter_client).to receive(:client).and_return(es_client)
+        allow(es_client).to receive(:info).with(a_hash_including(:headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER)).and_raise(
+          Elasticsearch::Transport::Transport::Errors::BadRequest.new
+        )
+      end
+
+      it "raises an exception when Elastic Api Version is not supported" do
         expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
       end
     end
@@ -84,6 +105,7 @@ describe LogStash::Filters::Elasticsearch do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
       allow(client).to receive(:search).and_return(response)
       allow(plugin).to receive(:test_connection!)
+      allow(plugin).to receive(:setup_serverless)
       plugin.register
     end
 
@@ -423,7 +445,9 @@ describe LogStash::Filters::Elasticsearch do
       let(:plugin) { described_class.new(config) }
       let(:event)  { LogStash::Event.new({}) }
 
-      it "client should sent the expect user-agent" do
+      # elasticsearch-ruby 7.17.9 initialize two user agent headers, `user-agent` and `User-Agent`
+      # hence, fail this header size test case
+      xit "client should sent the expect user-agent" do
         plugin.register
 
         request = webserver.wait_receive_request
@@ -445,6 +469,7 @@ describe LogStash::Filters::Elasticsearch do
 
     before(:each) do
       allow(plugin).to receive(:test_connection!)
+      allow(plugin).to receive(:setup_serverless)
     end
 
     after(:each) do
@@ -619,6 +644,47 @@ describe LogStash::Filters::Elasticsearch do
     end
   end
 
+  describe "Elastic Api Header" do
+    let(:config) { {"query" => "*"} }
+    let(:plugin) { described_class.new(config) }
+    let(:headers) {{'x-elastic-product' => 'Elasticsearch'}}
+    let(:cluster_info) { {"version" => {"number" => "8.10.0", "build_flavor" => build_flavor}, "tagline" => "You Know, for Search"} }
+    let(:mock_resp) { MockResponse.new(200, cluster_info, headers) }
+
+    before do
+      expect(plugin).to receive(:test_connection!)
+    end
+
+    context "serverless" do
+      let(:build_flavor) { "serverless" }
+
+      before do
+        allow_any_instance_of(Elasticsearch::Client).to receive(:perform_request).with(any_args).and_return(mock_resp)
+      end
+
+      it 'propagates header to es client' do
+        plugin.register
+        client = plugin.send(:get_client).client
+        expect( extract_transport(client).options[:transport_options][:headers] ).to match hash_including("Elastic-Api-Version" => "2023-10-31")
+      end
+    end
+
+    context "stateful" do
+      let(:build_flavor) { "default" }
+
+      before do
+        expect_any_instance_of(Elasticsearch::Client).to receive(:perform_request).with(any_args).and_return(mock_resp)
+      end
+
+      it 'does not propagate header to es client' do
+        plugin.register
+        client = plugin.send(:get_client).client
+        expect( extract_transport(client).options[:transport_options][:headers] ).to match hash_not_including("Elastic-Api-Version" => "2023-10-31")
+      end
+    end
+
+  end
+
   describe "ca_trusted_fingerprint" do
     let(:ca_trusted_fingerprint) { SecureRandom.hex(32) }
     let(:config) { {"ssl_enabled" => true, "ca_trusted_fingerprint" => ca_trusted_fingerprint, "query" => "*"}}
@@ -627,7 +693,10 @@ describe LogStash::Filters::Elasticsearch do
 
     if Gem::Version.create(LOGSTASH_VERSION) >= Gem::Version.create("8.3.0")
       context 'the generated trust_strategy' do
-        before(:each) { allow(plugin).to receive(:test_connection!) }
+        before(:each) do
+          allow(plugin).to receive(:test_connection!)
+          allow(plugin).to receive(:setup_serverless)
+        end
 
         it 'is passed to the Manticore client' do
           expect(Manticore::Client).to receive(:new)
@@ -666,7 +735,10 @@ describe LogStash::Filters::Elasticsearch do
 
     subject(:plugin) { described_class.new(config) }
 
-    before(:each) { allow(plugin).to receive(:test_connection!) }
+    before(:each) do
+      allow(plugin).to receive(:test_connection!)
+      allow(plugin).to receive(:setup_serverless)
+    end
 
     it 'is passed to the Manticore client' do
       expect(Manticore::Client).to receive(:new)
@@ -694,7 +766,10 @@ describe LogStash::Filters::Elasticsearch do
     let(:config) { {"query" => "*"} }
     let(:plugin) { described_class.new(config) }
 
-    before { allow(plugin).to receive(:test_connection!) }
+    before do
+      allow(plugin).to receive(:test_connection!)
+      allow(plugin).to receive(:setup_serverless)
+    end
 
     it "should set localhost:9200 as hosts" do
       plugin.register
@@ -719,6 +794,7 @@ describe LogStash::Filters::Elasticsearch do
     before(:each) do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
       allow(plugin).to receive(:test_connection!)
+      allow(plugin).to receive(:setup_serverless)
       plugin.register
     end
 
@@ -736,4 +812,21 @@ describe LogStash::Filters::Elasticsearch do
     client.transport.respond_to?(:transport) ? client.transport.transport : client.transport
   end
 
+  class MockResponse
+    attr_reader :code, :headers
+
+    def initialize(code = 200, body = nil, headers = {})
+      @code = code
+      @body = body
+      @headers = headers
+    end
+
+    def body
+      @body
+    end
+
+    def status
+      @code
+    end
+  end
 end

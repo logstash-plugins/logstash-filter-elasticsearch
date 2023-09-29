@@ -1,3 +1,6 @@
+## 3.16.0
+  - Added request header `Elastic-Api-Version` for serverless [#174](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/174)
+
 ## 3.15.3
   - Fixes a memory leak that occurs when a pipeline containing this filter terminates, which could become significant if the pipeline is cycled repeatedly [#173](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/173)
 

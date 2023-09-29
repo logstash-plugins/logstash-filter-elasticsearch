@@ -179,6 +179,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     @hosts = Array(@hosts).map { |host| host.to_s } # potential SafeURI#to_s
 
     test_connection!
+    setup_serverless
   end # def register
 
   def filter(event)
@@ -260,14 +261,15 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   private
 
   def client_options
-    {
+    @client_options ||= {
       :user => @user,
       :password => @password,
       :api_key => @api_key,
       :proxy => @proxy,
       :ssl => client_ssl_options,
       :retry_on_failure => @retry_on_failure,
-      :retry_on_status => @retry_on_status
+      :retry_on_status => @retry_on_status,
+      :user_agent => prepare_user_agent
     }
   end
 
@@ -344,11 +346,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   def new_client
     # NOTE: could pass cloud-id/cloud-auth to client but than we would need to be stricter on ES version requirement
     # and also LS parsing might differ from ES client's parsing so for consistency we do not pass cloud options ...
-    opts = client_options
-
-    opts[:user_agent] = prepare_user_agent
-
-    LogStash::Filters::ElasticsearchClient.new(@logger, @hosts, opts)
+    LogStash::Filters::ElasticsearchClient.new(@logger, @hosts, client_options)
   end
 
   def get_client
@@ -476,6 +474,17 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     rescue Elasticsearch::UnsupportedProductError
       raise LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch"
     end
+  end
+
+  def setup_serverless
+    if get_client.serverless?
+      @client_options[:serverless] = true
+      @shared_client = new_client
+      get_client.info
+    end
+  rescue => e
+    @logger.error("Failed to retrieve Elasticsearch info", message: e.message, exception: e.class, backtrace: e.backtrace)
+    raise LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch"
   end
 
   def setup_ssl_params!
