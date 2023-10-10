@@ -195,6 +195,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         params[:q] = query
         params[:size] = result_size
         params[:sort] =  @sort if @enable_sort
+        unless fields.empty?
+          params[:_source] = fields.keys
+        end
       end
 
       @logger.debug("Querying elasticsearch for lookup", :params => params)
