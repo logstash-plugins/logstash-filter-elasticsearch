@@ -3,7 +3,6 @@ require "logstash/filters/base"
 require "logstash/namespace"
 require "logstash/json"
 require 'logstash/plugin_mixins/ca_trusted_fingerprint_support'
-require "logstash/plugin_mixins/normalize_config_support"
 require "monitor"
 
 require_relative "elasticsearch/client"
@@ -62,18 +61,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Set the address of a forward HTTP proxy.
   config :proxy, :validate => :uri_or_empty
 
-  # SSL
-  config :ssl, :validate => :boolean, :default => false, :deprecated => "Set 'ssl_enabled' instead."
-
-  # SSL Certificate Authority file
-  config :ca_file, :validate => :path, :deprecated => "Set 'ssl_certificate_authorities' instead."
-
-  # The keystore used to present a certificate to the server.
-  # It can be either .jks or .p12
-  config :keystore, :validate => :path, :deprecated => "Use 'ssl_keystore_path' instead."
-
-  # Set the keystore password
-  config :keystore_password, :validate => :password, :deprecated => "Use 'ssl_keystore_password' instead."
 
   # OpenSSL-style X.509 certificate certificate to authenticate the client
   config :ssl_certificate, :validate => :path
@@ -135,10 +122,14 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # What status codes to retry on?
   config :retry_on_status, :validate => :number, :list => true, :default => [500, 502, 503, 504]
 
+
+  config :ssl, :obsolete => "Set 'ssl_enabled' instead."
+  config :ca_file, :obsolete => "Set 'ssl_certificate_authorities' instead."
+  config :keystore, :obsolete => "Set 'ssl_keystore_path' instead."
+  config :keystore_password, :obsolete => "Set 'ssl_keystore_password' instead."
+
   # config :ca_trusted_fingerprint, :validate => :sha_256_hex
   include LogStash::PluginMixins::CATrustedFingerprintSupport
-
-  include LogStash::PluginMixins::NormalizeConfigSupport
 
   include MonitorMixin
   attr_reader :shared_client
@@ -488,35 +479,12 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def setup_ssl_params!
-    @ssl_enabled = normalize_config(:ssl_enabled) do |normalize|
-      normalize.with_deprecated_alias(:ssl)
-    end
-
     # Infer the value if neither the deprecate `ssl` and `ssl_enabled` were set
     infer_ssl_enabled_from_hosts
-
-    @ssl_keystore_path = normalize_config(:ssl_keystore_path) do |normalize|
-      normalize.with_deprecated_alias(:keystore)
-    end
-
-    @ssl_keystore_password = normalize_config(:ssl_keystore_password) do |normalize|
-      normalize.with_deprecated_alias(:keystore_password)
-    end
-
-    @ssl_certificate_authorities = normalize_config(:ssl_certificate_authorities) do |normalize|
-      normalize.with_deprecated_mapping(:ca_file) do |ca_file|
-        [ca_file]
-      end
-    end
-
-    params['ssl_enabled'] = @ssl_enabled
-    params['ssl_keystore_path'] = @ssl_keystore_path unless @ssl_keystore_path.nil?
-    params['ssl_keystore_password'] = @ssl_keystore_password unless @ssl_keystore_password.nil?
-    params['ssl_certificate_authorities'] = @ssl_certificate_authorities unless @ssl_certificate_authorities.nil?
   end
 
   def infer_ssl_enabled_from_hosts
-    return if original_params.include?('ssl') || original_params.include?('ssl_enabled')
+    return if original_params.include?('ssl_enabled')
 
     @ssl_enabled = params['ssl_enabled'] = effectively_ssl?
   end
