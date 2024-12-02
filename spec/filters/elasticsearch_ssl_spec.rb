@@ -24,6 +24,23 @@ describe "SSL options" do
     subject.close
   end
 
+  describe "obsolete settings" do
+    [{:name => 'ca_file', :canonical_name => 'ssl_certificate_authorities'},
+     {:name => "keystore", :canonical_name => 'ssl_keystore_path'},
+     {:name => "keystore_password", :canonical_name => "ssl_keystore_password"},
+     {:name => "ssl", :canonical_name => "ssl_enabled"}
+    ].each do |config_settings|
+      context "with option #{config_settings[:name]}" do
+        let(:obsolete_config) { settings.merge(config_settings[:name] => 'test_value') }
+        it "emits an error about the setting `#{config_settings[:name]}` now being obsolete and provides guidance to use `#{config_settings[:canonical_name]}`" do
+          error_text = /The setting `#{config_settings[:name]}` in plugin `elasticsearch` is obsolete and is no longer available. Set '#{config_settings[:canonical_name]}' instead/i
+          expect { LogStash::Filters::Elasticsearch.new(obsolete_config) }.to raise_error LogStash::ConfigurationError, error_text
+        end
+
+      end
+    end
+  end
+
   context "when ssl_enabled is" do
     context "true and there is no https hosts" do
       let(:hosts) { %w[http://es01 http://es01] }
