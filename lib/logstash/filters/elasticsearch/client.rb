@@ -12,6 +12,7 @@ module LogStash
 
       BUILD_FLAVOR_SERVERLESS = 'serverless'.freeze
       DEFAULT_EAV_HEADER = { "Elastic-Api-Version" => "2023-10-31" }.freeze
+      INTERNAL_ORIGIN_HEADER = { 'x-elastic-product-origin' => 'logstash-filter-elasticsearch'}.freeze
 
       def initialize(logger, hosts, options = {})
         user = options.fetch(:user, nil)
@@ -25,6 +26,7 @@ module LogStash
         transport_options[:headers].merge!(setup_basic_auth(user, password))
         transport_options[:headers].merge!(setup_api_key(api_key))
         transport_options[:headers].merge!({ 'user-agent' => "#{user_agent}" })
+        transport_options[:headers].merge!(INTERNAL_ORIGIN_HEADER)
 
         transport_options[:pool_max] = 1000
         transport_options[:pool_max_per_route] = 100
