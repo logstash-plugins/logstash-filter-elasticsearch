@@ -644,7 +644,7 @@ describe LogStash::Filters::Elasticsearch do
     end
   end
 
-  describe "Elastic Api Header" do
+  describe "Elastic Api and Product Origin Headers" do
     let(:config) { {"query" => "*"} }
     let(:plugin) { described_class.new(config) }
     let(:headers) {{'x-elastic-product' => 'Elasticsearch'}}
@@ -666,6 +666,8 @@ describe LogStash::Filters::Elasticsearch do
         plugin.register
         client = plugin.send(:get_client).client
         expect( extract_transport(client).options[:transport_options][:headers] ).to match hash_including("Elastic-Api-Version" => "2023-10-31")
+        expect( extract_transport(client).options[:transport_options][:headers] )
+          .to match hash_including("x-elastic-product-origin" => "logstash-filter-elasticsearch")
       end
     end
 
@@ -676,10 +678,12 @@ describe LogStash::Filters::Elasticsearch do
         expect_any_instance_of(Elasticsearch::Client).to receive(:perform_request).with(any_args).and_return(mock_resp)
       end
 
-      it 'does not propagate header to es client' do
+      it 'does not propagate Elastic-Api-Version header to es client' do
         plugin.register
         client = plugin.send(:get_client).client
         expect( extract_transport(client).options[:transport_options][:headers] ).to match hash_not_including("Elastic-Api-Version" => "2023-10-31")
+        expect( extract_transport(client).options[:transport_options][:headers] )
+          .to match hash_including("x-elastic-product-origin" => "logstash-filter-elasticsearch")
       end
     end
 

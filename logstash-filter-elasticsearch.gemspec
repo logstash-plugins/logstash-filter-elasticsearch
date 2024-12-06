@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
 
   s.name            = 'logstash-filter-elasticsearch'
-  s.version         = '3.16.1'
+  s.version         = '3.16.2'
   s.licenses        = ['Apache License (2.0)']
   s.summary         = "Copies fields from previous log events in Elasticsearch to current events "
   s.description     = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using $LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"

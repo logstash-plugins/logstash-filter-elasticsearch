@@ -1,3 +1,6 @@
+## 3.16.2
+  - Add `x-elastic-product-origin` header to Elasticsearch requests [#185](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/185)
+
 ## 3.16.1
   - Version bump to pick up doc fix in [#172](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/172)
 
