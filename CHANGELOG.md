@@ -1,12 +1,12 @@
 ## 4.0.0
-- SSL settings that were marked deprecated in version `3.15.0` are now marked obsolete, and will prevent the plugin from starting.
-- These settings are:
-  - `ca_file`, which should be replaced by `ssl_certificate_authorities`
-  - `keystore`, which should be replaced by `ssl_keystore_path`
-  - `keystore_password`, which should be replaced by `ssl_keystore_password`
-  - `keystore_type`, which should be replaced by `ssl_keystore_password`
-  - `ssl`, which should be replaced by `ssl_enabled`
-  - [#183](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/183)
+  - SSL settings that were marked deprecated in version `3.15.0` are now marked obsolete, and will prevent the plugin from starting.
+  - These settings are:
+    - `ca_file`, which should be replaced by `ssl_certificate_authorities`
+    - `keystore`, which should be replaced by `ssl_keystore_path`
+    - `keystore_password`, which should be replaced by `ssl_keystore_password`
+    - `keystore_type`, which should be replaced by `ssl_keystore_password`
+    -  `ssl`, which should be replaced by `ssl_enabled`
+    - [#183](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/183)
 
 ## 3.16.2
   - Add `x-elastic-product-origin` header to Elasticsearch requests [#185](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/185)

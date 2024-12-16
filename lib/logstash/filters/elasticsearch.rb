@@ -126,7 +126,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   config :ssl, :obsolete => "Set 'ssl_enabled' instead."
   config :ca_file, :obsolete => "Set 'ssl_certificate_authorities' instead."
   config :keystore, :obsolete => "Set 'ssl_keystore_path' instead."
-  config :keystore_password, :obsolete => "Set 'ssl_keystore_password' instead."
+  config :keystore_password, :validate => :password, :obsolete => "Set 'ssl_keystore_password' instead."
 
   # config :ca_trusted_fingerprint, :validate => :sha_256_hex
   include LogStash::PluginMixins::CATrustedFingerprintSupport
@@ -479,23 +479,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def setup_ssl_params!
-    # Infer the value if neither the deprecate `ssl` and `ssl_enabled` were set
-    infer_ssl_enabled_from_hosts
-  end
-
-  def infer_ssl_enabled_from_hosts
+    # Infer the value if neither `ssl_enabled` was not set
     return if original_params.include?('ssl_enabled')
-
-    @ssl_enabled = params['ssl_enabled'] = effectively_ssl?
-  end
-
-  def effectively_ssl?
-    return true if @ssl_enabled
-
-    hosts = Array(@hosts)
-    return false if hosts.nil? || hosts.empty?
-
-    hosts.all? { |host| host && host.to_s.start_with?("https") }
+    params['ssl_enabled'] = @ssl_enabled ||= Array(@hosts).all? { |host| host && host.to_s.start_with?("https") }
   end
 
 end #class LogStash::Filters::Elasticsearch

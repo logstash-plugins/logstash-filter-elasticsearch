@@ -123,7 +123,7 @@ The `monitoring` permission at cluster level is necessary to perform periodic co
 
 This plugin supports the following configuration options plus the <<plugins-{type}s-{plugin}-common-options>> described later.
 
-NOTE: As of version `6.0.0` of this plugin, a number of previously deprecated settings related to SSL have been removed. Please see the
+NOTE: As of version `4.0.0` of this plugin, a number of previously deprecated settings related to SSL have been removed. Please see the
 <<plugins-{type}s-{plugin}-obsolete-options>> for more details.
 
 [cols="<,<,<",options="header",]
