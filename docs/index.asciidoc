@@ -110,7 +110,7 @@ Authentication to a secure Elasticsearch cluster is possible using _one_ of the 
 * <<plugins-{type}s-{plugin}-user>> AND <<plugins-{type}s-{plugin}-password>>
 * <<plugins-{type}s-{plugin}-cloud_auth>>
 * <<plugins-{type}s-{plugin}-api_key>>
-* <<plugins-{type}s-{plugin}-keystore>> and/or <<plugins-{type}s-{plugin}-keystore_password>>
+* <<plugins-{type}s-{plugin}-ssl_keystore_path>> and/or <<plugins-{type}s-{plugin}-ssl_keystore_password>>
 
 [id="plugins-{type}s-{plugin}-autz"]
 ==== Authorization
