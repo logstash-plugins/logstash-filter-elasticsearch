@@ -255,7 +255,6 @@ Example:
   * Default value is empty
 
 Pass a set of key value pairs as the headers sent in each request to an elasticsearch node.
-The headers will be used for any kind of request.
 The values of these custom headers will override any headers previously set by the plugin such as the User Agent or Authorization headers.
 
 [id="plugins-{type}s-{plugin}-enable_sort"]
