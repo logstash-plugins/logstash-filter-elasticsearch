@@ -132,6 +132,7 @@ This plugin supports the following configuration options plus the <<plugins-{typ
 | <<plugins-{type}s-{plugin}-cloud_auth>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-cloud_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-docinfo_fields>> |<<hash,hash>>|No
+| <<plugins-{type}s-{plugin}-custom_headers>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-enable_sort>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-fields>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-hosts>> |<<array,array>>|No
@@ -246,6 +247,16 @@ Example:
         }
       }
     }
+
+[id="plugins-{type}s-{plugin}-custom_headers"]
+===== `custom_headers`
+
+  * Value type is <<hash,hash>>
+  * Default value is empty
+
+Pass a set of key value pairs as the headers sent in each request to an elasticsearch node.
+The headers will be used for any kind of request.
+The values of these custom headers will override any headers previously set by the plugin such as the User Agent or Authorization headers.
 
 [id="plugins-{type}s-{plugin}-enable_sort"]
 ===== `enable_sort` 
