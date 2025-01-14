@@ -26,6 +26,7 @@ module LogStash
         transport_options[:headers].merge!(setup_basic_auth(user, password))
         transport_options[:headers].merge!(setup_api_key(api_key))
         transport_options[:headers].merge!({ 'user-agent' => "#{user_agent}" })
+        transport_options[:headers].merge!(@custom_headers) unless @custom_headers.empty?
         transport_options[:headers].merge!(INTERNAL_ORIGIN_HEADER)
 
         transport_options[:pool_max] = 1000
