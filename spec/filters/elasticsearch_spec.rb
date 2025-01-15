@@ -87,6 +87,8 @@ describe LogStash::Filters::Elasticsearch do
     context "with custom headers" do
       let(:config) do
         {
+          "hosts" => ["localhost:9200"],
+          "query" => "response: 404",
           "custom_headers" => { "Custom-Header-1" => "Custom Value 1", "Custom-Header-2" => "Custom Value 2" }
         }
       end
