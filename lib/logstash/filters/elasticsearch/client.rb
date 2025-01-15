@@ -28,7 +28,7 @@ module LogStash
         transport_options[:headers].merge!(setup_api_key(api_key))
         transport_options[:headers].merge!({ 'user-agent' => "#{user_agent}" })
         transport_options[:headers].merge!(INTERNAL_ORIGIN_HEADER)
-        transport_options[:headers].merge!(custom_headers)
+        transport_options[:headers].merge!(custom_headers) unless custom_headers.empty?
         transport_options[:pool_max] = 1000
         transport_options[:pool_max_per_route] = 100
 
