@@ -1,3 +1,6 @@
+## 4.1.0
+ - Added support for custom headers [#187](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/187)
+
 ## 4.0.0
   - SSL settings that were marked deprecated in version `3.15.0` are now marked obsolete, and will prevent the plugin from starting.
   - These settings are:
