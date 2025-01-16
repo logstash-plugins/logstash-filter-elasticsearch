@@ -231,6 +231,15 @@ Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
 For more info, check out the
 {logstash-ref}/connecting-to-cloud.html[Logstash-to-Cloud documentation].
 
+[id="plugins-{type}s-{plugin}-custom_headers"]
+===== `custom_headers`
+
+  * Value type is <<hash,hash>>
+  * Default value is empty
+
+Pass a set of key value pairs as the headers sent in each request to Elasticsearch.
+These custom headers will override any headers previously set by the plugin such as the User Agent or Authorization headers.
+
 [id="plugins-{type}s-{plugin}-docinfo_fields"]
 ===== `docinfo_fields` 
 
