@@ -263,7 +263,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       :ssl => client_ssl_options,
       :retry_on_failure => @retry_on_failure,
       :retry_on_status => @retry_on_status,
-      :user_agent => prepare_user_agent
+      :user_agent => prepare_user_agent,
+      :custom_headers => @custom_headers
     }
   end
 
