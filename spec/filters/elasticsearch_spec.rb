@@ -96,7 +96,7 @@ describe LogStash::Filters::Elasticsearch do
 
       it "sets custom headers" do
         plugin.register
-        client = plugin.send(:client)
+        client = plugin.send(:get_client).client
         expect( extract_transport(client).options[:transport_options][:headers] ).to match hash_including(config["custom_headers"])
       end
     end
