@@ -134,6 +134,7 @@ NOTE: As of version `4.0.0` of this plugin, a number of previously deprecated se
 | <<plugins-{type}s-{plugin}-ca_trusted_fingerprint>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-cloud_auth>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-cloud_id>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-custom_headers>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-docinfo_fields>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-enable_sort>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-fields>> |<<array,array>>|No
@@ -229,6 +230,16 @@ Cloud ID, from the Elastic Cloud web console. If set `hosts` should not be used.
 
 For more info, check out the
 {logstash-ref}/connecting-to-cloud.html[Logstash-to-Cloud documentation].
+
+
+[id="plugins-{type}s-{plugin}-custom_headers"]
+===== `custom_headers`
+
+  * Value type is <<hash,hash>>
+  * Default value is empty
+
+Pass a set of key value pairs as the headers sent in each request to Elasticsearch.
+These custom headers will override any headers previously set by the plugin such as the User Agent or Authorization headers.
 
 [id="plugins-{type}s-{plugin}-docinfo_fields"]
 ===== `docinfo_fields` 

@@ -32,6 +32,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Array of fields to copy from old event (found via elasticsearch) into new event
   config :fields, :validate => :array, :default => {}
 
+  # Custom headers for Elasticsearch requests
+  config :custom_headers, :validate => :hash, :default => {}
+
   # Hash of docinfo fields to copy from old event (found via elasticsearch) into new event
   config :docinfo_fields, :validate => :hash, :default => {}
 
