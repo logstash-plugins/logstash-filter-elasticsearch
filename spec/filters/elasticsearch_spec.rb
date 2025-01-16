@@ -351,6 +351,24 @@ describe LogStash::Filters::Elasticsearch do
       end
     end
 
+    context "with custom headers" do
+      let(:config) { { "query" => "*", "custom_headers" => { "X-Custom-Header" => "CustomValue" } } }
+      let(:filter_client) { double("filter_client") }
+      let(:es_client) { double("es_client") }
+
+      before do
+        allow(plugin).to receive(:test_connection!)
+        allow(plugin).to receive(:get_client).and_return(filter_client)
+        allow(filter_client).to receive(:serverless?).and_return(false)
+        allow(filter_client).to receive(:client).and_return(es_client)
+        allow(es_client).to receive(:info).with(a_hash_including(:headers => hash_including("X-Custom-Header" => "CustomValue"))).and_return({})
+      end
+
+      it "includes custom headers in the request" do
+        expect { plugin.register }.not_to raise_error
+      end
+    end
+    
     context "if query is on nested field" do
       let(:config) do
         {
