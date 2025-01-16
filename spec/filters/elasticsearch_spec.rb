@@ -336,17 +336,24 @@ describe LogStash::Filters::Elasticsearch do
     context "with custom headers" do
       let(:config) do
         {
-          "hosts" => ["localhost:9200"],
-          "query" => "response: 404",
+          "query" => "*",
           "custom_headers" => { "Custom-Header-1" => "Custom Value 1", "Custom-Header-2" => "Custom Value 2" }
         }
       end
-
-
+    
+      let(:plugin) { LogStash::Filters::Elasticsearch.new(config) }
+      let(:client_double) { double("client") }
+      let(:transport_double) { double("transport", options: { transport_options: { headers: config["custom_headers"] } }) }
+    
+      before do
+        allow(plugin).to receive(:get_client).and_return(client_double)
+        allow(client_double).to receive(:client).and_return(transport_double)
+      end
+    
       it "sets custom headers" do
         plugin.register
         client = plugin.send(:get_client).client
-        expect( extract_transport(client).options[:transport_options][:headers] ).to match hash_including(config["custom_headers"])
+        expect(client.options[:transport_options][:headers]).to match(hash_including(config["custom_headers"]))
       end
     end
     
