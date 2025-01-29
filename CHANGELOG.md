@@ -1,5 +1,5 @@
 ## 3.17.0
-  - Added support for custom headers [#188](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/188)
+  - Added support for custom headers [#190](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/190)
 
 ## 3.16.2
   - Add `x-elastic-product-origin` header to Elasticsearch requests [#185](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/185)
