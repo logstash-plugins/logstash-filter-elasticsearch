@@ -1,7 +1,6 @@
 # encoding: utf-8
 require "elasticsearch"
 require "base64"
-require "elasticsearch/transport/transport/http/manticore"
 
 
 module LogStash
@@ -9,6 +8,7 @@ module LogStash
     class ElasticsearchClient
 
       attr_reader :client
+      attr_reader :es_transport_client_type
 
       BUILD_FLAVOR_SERVERLESS = 'serverless'.freeze
       DEFAULT_EAV_HEADER = { "Elastic-Api-Version" => "2023-10-31" }.freeze
@@ -44,7 +44,7 @@ module LogStash
 
         client_options = {
                        hosts: hosts,
-             transport_class: ::Elasticsearch::Transport::Transport::HTTP::Manticore,
+             transport_class: get_transport_client_class,
            transport_options: transport_options,
                          ssl: ssl_options,
             retry_on_failure: options[:retry_on_failure],
@@ -97,6 +97,16 @@ module LogStash
 
         token = ::Base64.strict_encode64(api_key.value)
         { 'Authorization' => "ApiKey #{token}" }
+      end
+
+      def get_transport_client_class
+        require "elasticsearch/transport/transport/http/manticore"
+        es_transport_client_type = "elasticsearch_transport"
+        ::Elasticsearch::Transport::Transport::HTTP::Manticore
+      rescue ::LoadError
+        require "elastic/transport/transport/http/manticore"
+        es_transport_client_type = "elastic_transport"
+        ::Elastic::Transport::Transport::HTTP::Manticore
       end
     end
   end
