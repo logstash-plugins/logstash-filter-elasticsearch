@@ -1,5 +1,5 @@
 ## 4.1.1
-  - Adds elastic-transport support [#191](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/191)
+  - Adds elastic-transport client support [#191](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/191)
 
 ## 4.1.0
  - Added support for custom headers [#188](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/188)
