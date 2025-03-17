@@ -1,5 +1,5 @@
 ## 3.17.1
-  - Add elastic-transport client support used in elasticsearch-ruby 8.x [#192](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/192)
+  - Add elastic-transport client support used in elasticsearch-ruby 8.x [#193](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/193)
 
 ## 3.17.0
   - Added support for custom headers [#190](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/190)
