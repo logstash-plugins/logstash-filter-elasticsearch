@@ -60,9 +60,17 @@ describe LogStash::Filters::Elasticsearch do
         allow(plugin).to receive(:get_client).and_return(filter_client)
         allow(filter_client).to receive(:serverless?).and_return(true)
         allow(filter_client).to receive(:client).and_return(es_client)
-        allow(es_client).to receive(:info).with(a_hash_including(:headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER)).and_raise(
-          Elasticsearch::Transport::Transport::Errors::BadRequest.new
-        )
+        begin
+        allow(es_client).to receive(:info)
+                              .with(a_hash_including(
+                                      :headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER))
+                              .and_raise(Elasticsearch::Transport::Transport::Errors::BadRequest.new)
+        rescue NameError # we get NameError: uninitialized constant Elasticsearch::Transport with 7.x
+          allow(es_client).to receive(:info)
+                                .with(a_hash_including(
+                                        :headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER))
+                                .and_raise(Elastic::Transport::Transport::Errors::BadRequest.new)
+        end
       end
 
       it "raises an exception when Elastic Api Version is not supported" do
@@ -103,7 +111,13 @@ describe LogStash::Filters::Elasticsearch do
 
     before(:each) do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
-      allow(client).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
+      begin
+        require "elasticsearch/transport/transport/http/manticore"
+        allow(client).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
+      rescue LoadError
+        require "elastic/transport/transport/http/manticore"
+        allow(client).to receive(:es_transport_client_type).and_return('elastic_transport')
+      end
       allow(client).to receive(:search).and_return(response)
       allow(plugin).to receive(:test_connection!)
       allow(plugin).to receive(:setup_serverless)
@@ -348,7 +362,12 @@ describe LogStash::Filters::Elasticsearch do
 
       before do
         allow(plugin).to receive(:get_client).and_return(client_double)
-        allow(client_double).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
+        begin
+          require "elasticsearch/transport/transport/http/manticore"
+          allow(client_double).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
+        rescue LoadError
+          allow(client_double).to receive(:es_transport_client_type).and_return('elastic_transport')
+        end
         allow(client_double).to receive(:client).and_return(transport_double)
       end
 
@@ -508,7 +527,13 @@ describe LogStash::Filters::Elasticsearch do
       # this spec is a safeguard to trigger an assessment of thread-safety should
       # we choose a different transport adapter in the future.
       transport_class = extract_transport(client).options.fetch(:transport_class)
-      expect(transport_class).to equal ::Elasticsearch::Transport::Transport::HTTP::Manticore
+      begin
+        ::Elasticsearch::Transport::Transport::HTTP::Manticore
+        expect(transport_class).to equal ::Elasticsearch::Transport::Transport::HTTP::Manticore
+      rescue NameError
+        allow(client).to receive(:es_transport_client_type).and_return("elastic_transport")
+        expect(transport_class).to equal ::Elastic::Transport::Transport::HTTP::Manticore
+      end
     end
 
     it 'uses a client with sufficient connection pool size' do
@@ -823,7 +848,12 @@ describe LogStash::Filters::Elasticsearch do
 
     before(:each) do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
-      allow(client).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
+      begin
+        require "elasticsearch/transport/transport/http/manticore"
+        allow(client).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
+      rescue LoadError
+        allow(client).to receive(:es_transport_client_type).and_return('elastic_transport')
+      end
       allow(plugin).to receive(:test_connection!)
       allow(plugin).to receive(:setup_serverless)
       plugin.register
@@ -839,7 +869,7 @@ describe LogStash::Filters::Elasticsearch do
   end
 
   # @note can be removed once gem depends on elasticsearch >= 6.x
-  def extract_transport(client) # on 7.x client.transport is a ES::Transport::Client
+  def extract_transport(client) # on >7.x client.transport is a ES::Transport::Client
     client.transport.respond_to?(:transport) ? client.transport.transport : client.transport
   end
 
