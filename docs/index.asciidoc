@@ -137,6 +137,7 @@ NOTE: As of version `4.0.0` of this plugin, a number of previously deprecated se
 | <<plugins-{type}s-{plugin}-custom_headers>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-docinfo_fields>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-enable_sort>> |<<boolean,boolean>>|No
+| <<plugins-{type}s-{plugin}-include_hits>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-fields>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-hosts>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-index>> |<<string,string>>|No
@@ -261,12 +262,20 @@ Example:
     }
 
 [id="plugins-{type}s-{plugin}-enable_sort"]
-===== `enable_sort` 
+===== `enable_sort`
 
   * Value type is <<boolean,boolean>>
   * Default value is `true`
 
 Whether results should be sorted or not
+
+[id="plugins-{type}s-{plugin}-include_hits"]
+===== `include_hits`
+
+  * Value type is <<boolean,boolean>>
+  * Default value is `false`
+
+Whether the full list of hits should be applied to `[@metadata][hits]`.
 
 [id="plugins-{type}s-{plugin}-fields"]
 ===== `fields` 

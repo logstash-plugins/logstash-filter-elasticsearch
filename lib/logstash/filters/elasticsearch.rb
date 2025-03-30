@@ -112,6 +112,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Whether results should be sorted or not
   config :enable_sort, :validate => :boolean, :default => true
 
+  # Whether to set hits to metadata
+  config :include_hits, :validate => :boolean, :default => false
+
   # How many results to return
   config :result_size, :validate => :number, :default => 1
 
@@ -202,6 +205,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
       resultsHits = results["hits"]["hits"]
       if !resultsHits.nil? && !resultsHits.empty?
+        if @include_hits
+          event.set("[@metadata][hits]", resultsHits)
+        end
         matched = true
         @fields.each do |old_key, new_key|
           old_key_path = extract_path(old_key)
