@@ -12,6 +12,9 @@ require_relative "elasticsearch/client"
 
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
+  require 'logstash/filters/elasticsearch/dsl_executor'
+  require 'logstash/filters/elasticsearch/esql_executor'
+
   include LogStash::PluginMixins::ECSCompatibilitySupport
   include LogStash::PluginMixins::ECSCompatibilitySupport::TargetCheck
 
@@ -24,8 +27,13 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Field substitution (e.g. `index-name-%{date_field}`) is available
   config :index, :validate => :string, :default => ""
 
-  # Elasticsearch query string. Read the Elasticsearch query string documentation.
-  # for more info at: https://www.elastic.co/guide/en/elasticsearch/reference/master/query-dsl-query-string-query.html#query-string-syntax
+  # Query mode to define what query style/syntax is used with @query param.
+  config :query_mode, :validate => %w[esql dsl], :default => "dsl"
+
+  # Elasticsearch query string. This can be in DSL or ES|QL query shape.
+  # Read the Elasticsearch query string documentation.
+  #   DSL: https://www.elastic.co/guide/en/elasticsearch/reference/master/query-dsl-query-string-query.html#query-string-syntax
+  #   ES|QL: https://www.elastic.co/guide/en/elasticsearch/reference/current/esql.html
   config :query, :validate => :string
 
   # File path to elasticsearch query in DSL format. Read the Elasticsearch query documentation
@@ -134,6 +142,11 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # What status codes to retry on?
   config :retry_on_status, :validate => :number, :list => true, :default => [500, 502, 503, 504]
 
+  # params to send to ES|QL query, naming params preferred
+  # example,
+  #   if query is "FROM my-index | WHERE some_type = ?type"
+  #   esql_params => [{"type": "@type_field"}]
+  config :esql_params, :validate => :array, :default => []
 
   config :ssl, :obsolete => "Set 'ssl_enabled' instead."
   config :ca_file, :obsolete => "Set 'ssl_certificate_authorities' instead."
@@ -186,72 +199,22 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     if get_client.es_transport_client_type == "elasticsearch_transport"
       require_relative "elasticsearch/patches/_elasticsearch_transport_http_manticore"
     end
+
+    if @query_mode == "esql"
+      @esql_executor ||= LogStash::Filters::Elasticsearch::EsqlExecutor.new(self, @logger)
+    else
+      @esql_executor ||= LogStash::Filters::Elasticsearch::DslExecutor.new(self, @logger)
+    end
   end # def register
 
   def filter(event)
-    matched = false
-    begin
-      params = { :index => event.sprintf(@index) }
-
-      if @query_dsl
-        query = LogStash::Json.load(event.sprintf(@query_dsl))
-        params[:body] = query
-      else
-        query = event.sprintf(@query)
-        params[:q] = query
-        params[:size] = result_size
-        params[:sort] =  @sort if @enable_sort
-      end
-
-      @logger.debug("Querying elasticsearch for lookup", :params => params)
-
-      results = get_client.search(params)
-      raise "Elasticsearch query error: #{results["_shards"]["failures"]}" if results["_shards"].include? "failures"
-
-      event.set("[@metadata][total_hits]", extract_total_from_hits(results['hits']))
-
-      resultsHits = results["hits"]["hits"]
-      if !resultsHits.nil? && !resultsHits.empty?
-        matched = true
-        @fields.each do |old_key, new_key|
-          old_key_path = extract_path(old_key)
-          extracted_hit_values = resultsHits.map do |doc|
-            extract_value(doc["_source"], old_key_path)
-          end
-          value_to_set = extracted_hit_values.count > 1 ? extracted_hit_values : extracted_hit_values.first
-          set_to_event_target(event, new_key, value_to_set)
-        end
-        @docinfo_fields.each do |old_key, new_key|
-          old_key_path = extract_path(old_key)
-          extracted_docs_info = resultsHits.map do |doc|
-            extract_value(doc, old_key_path)
-          end
-          value_to_set = extracted_docs_info.count > 1 ? extracted_docs_info : extracted_docs_info.first
-          set_to_event_target(event, new_key, value_to_set)
-        end
-      end
-
-      resultsAggs = results["aggregations"]
-      if !resultsAggs.nil? && !resultsAggs.empty?
-        matched = true
-        @aggregation_fields.each do |agg_name, ls_field|
-          set_to_event_target(event, ls_field, resultsAggs[agg_name])
-        end
-      end
-
-    rescue => e
-      if @logger.trace?
-        @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :query => query, :event => event.to_hash, :error => e.message, :backtrace => e.backtrace)
-      elsif @logger.debug?
-        @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :error => e.message, :backtrace => e.backtrace)
-      else
-        @logger.warn("Failed to query elasticsearch for previous event", :index => @index, :error => e.message)
-      end
-      @tag_on_failure.each{|tag| event.tag(tag)}
-    else
-      filter_matched(event) if matched
-    end
+    @esql_executor.process(get_client, event)
   end # def filter
+
+  def decorate(event)
+    # Elasticsearch class has an access for `filter_matched`
+    filter_matched(event)
+  end
 
   # public only to be reuse in testing
   def prepare_user_agent
@@ -374,39 +337,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     @shared_client || synchronize do
       @shared_client ||= new_client
     end
-  end
-
-  # get an array of path elements from a path reference
-  def extract_path(path_reference)
-    return [path_reference] unless path_reference.start_with?('[') && path_reference.end_with?(']')
-
-    path_reference[1...-1].split('][')
-  end
-
-  # given a Hash and an array of path fragments, returns the value at the path
-  # @param source [Hash{String=>Object}]
-  # @param path [Array{String}]
-  # @return [Object]
-  def extract_value(source, path)
-    path.reduce(source) do |memo, old_key_fragment|
-      break unless memo.include?(old_key_fragment)
-      memo[old_key_fragment]
-    end
-  end
-
-  # Given a "hits" object from an Elasticsearch response, return the total number of hits in
-  # the result set.
-  # @param hits [Hash{String=>Object}]
-  # @return [Integer]
-  def extract_total_from_hits(hits)
-    total = hits['total']
-
-    # Elasticsearch 7.x produces an object containing `value` and `relation` in order
-    # to enable unambiguous reporting when the total is only a lower bound; if we get
-    # an object back, return its `value`.
-    return total['value'] if total.kind_of?(Hash)
-
-    total
   end
 
   def hosts_default?(hosts)
