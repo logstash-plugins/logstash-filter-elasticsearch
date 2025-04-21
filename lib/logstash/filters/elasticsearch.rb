@@ -159,6 +159,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   include MonitorMixin
   attr_reader :shared_client
 
+  LS_ESQL_SUPPORT_VERSION = "8.17.4" # the version started using elasticsearch-ruby v8
+  ES_ESQL_SUPPORT_VERSION = "8.11.0"
+
   ##
   # @override to handle proxy => '' as if none was set
   # @param value [Array<Object>]
@@ -176,17 +179,20 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     return super(value, :uri)
   end
 
+  attr_reader :query_dsl
+
   def register
-    #Load query if it exists
-    if @query_template
-      if File.zero?(@query_template)
-        raise "template is empty"
-      end
-      file = File.open(@query_template, 'r')
-      @query_dsl = file.read
+    case @query_mode
+    when "esql"
+      validate_ls_version_for_esql_support!
+      validate_esql_query!
+      inform_ineffective_esql_params
+      @esql_executor ||= LogStash::Filters::Elasticsearch::EsqlExecutor.new(self, @logger)
+    else # dsl
+      validate_dsl_query_settings!
+      @esql_executor ||= LogStash::Filters::Elasticsearch::DslExecutor.new(self, @logger)
     end
 
-    validate_query_settings
     fill_hosts_from_cloud_id
     setup_ssl_params!
     validate_authentication
@@ -195,15 +201,10 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     @hosts = Array(@hosts).map { |host| host.to_s } # potential SafeURI#to_s
 
     test_connection!
+    validate_es_for_esql_support!
     setup_serverless
     if get_client.es_transport_client_type == "elasticsearch_transport"
       require_relative "elasticsearch/patches/_elasticsearch_transport_http_manticore"
-    end
-
-    if @query_mode == "esql"
-      @esql_executor ||= LogStash::Filters::Elasticsearch::EsqlExecutor.new(self, @logger)
-    else
-      @esql_executor ||= LogStash::Filters::Elasticsearch::DslExecutor.new(self, @logger)
     end
   end # def register
 
@@ -343,16 +344,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     hosts.is_a?(Array) && hosts.size == 1 && !original_params.key?('hosts')
   end
 
-  def validate_query_settings
-    unless @query || @query_template
-      raise LogStash::ConfigurationError, "Both `query` and `query_template` are empty. Require either `query` or `query_template`."
-    end
-
-    if @query && @query_template
-      raise LogStash::ConfigurationError, "Both `query` and `query_template` are set. Use either `query` or `query_template`."
-    end
-  end
-
   def validate_authentication
     authn_options = 0
     authn_options += 1 if @cloud_auth
@@ -442,6 +433,54 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     # Infer the value if neither `ssl_enabled` was not set
     return if original_params.include?('ssl_enabled')
     params['ssl_enabled'] = @ssl_enabled ||= Array(@hosts).all? { |host| host && host.to_s.start_with?("https") }
+  end
+
+  def validate_dsl_query_settings!
+    #Load query if it exists
+    if @query_template
+      if File.zero?(@query_template)
+        raise "template is empty"
+      end
+      file = File.open(@query_template, 'r')
+      @query_dsl = file.read
+    end
+
+    validate_query_settings
+  end
+
+  def validate_query_settings
+    unless @query || @query_template
+      raise LogStash::ConfigurationError, "Both `query` and `query_template` are empty. Require either `query` or `query_template`."
+    end
+
+    if @query && @query_template
+      raise LogStash::ConfigurationError, "Both `query` and `query_template` are set. Use either `query` or `query_template`."
+    end
+  end
+
+  def validate_ls_version_for_esql_support!
+    if Gem::Version.create(LOGSTASH_VERSION) < Gem::Version.create(LS_ESQL_SUPPORT_VERSION)
+      fail("Current version of Logstash does not include Elasticsearch client which supports ES|QL. Please upgrade Logstash to at least #{LS_ESQL_SUPPORT_VERSION}")
+    end
+  end
+
+  def validate_esql_query!
+    fail(LogStash::ConfigurationError, "`query` cannot be empty") if @query.strip.empty?
+    source_commands = %w[FROM ROW SHOW]
+    contains_source_command = source_commands.any? { |source_command| @query.strip.start_with?(source_command) }
+    fail(LogStash::ConfigurationError, "`query` needs to start with any of #{source_commands}") unless contains_source_command
+  end
+
+  def inform_ineffective_esql_params
+    ineffective_options = original_params.keys & %w(index target size slices search_api, docinfo, docinfo_target, docinfo_fields)
+    @logger.info("Configured #{ineffective_options} params are ineffective in ES|QL mode") if ineffective_options.size > 1
+  end
+
+  def validate_es_for_esql_support!
+    return unless @query_mode == 'esql'
+    # make sure connected ES supports ES|QL (8.11+)
+    es_supports_esql = Gem::Version.create(es_version) >= Gem::Version.create(ES_ESQL_SUPPORT_VERSION)
+    fail("Connected Elasticsearch #{es_version} version does not supports ES|QL. ES|QL feature requires at least Elasticsearch #{ES_ESQL_SUPPORT_VERSION} version.") unless es_supports_esql
   end
 
 end #class LogStash::Filters::Elasticsearch

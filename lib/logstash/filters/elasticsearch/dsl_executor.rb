@@ -8,13 +8,14 @@ module LogStash
           @plugin = plugin
           @index = plugin.params["index"]
           @query = plugin.params["query"]
+          @query_dsl = plugin.query_dsl
           @fields = plugin.params["fields"]
           @result_size = plugin.params["result_size"]
           @docinfo_fields = plugin.params["docinfo_fields"]
           @tag_on_failure = plugin.params["tag_on_failure"]
-          @query_dsl = plugin.params["query_dsl"]
           @enable_sort = plugin.params["enable_sort"]
           @sort = plugin.params["sort"]
+          @aggregation_fields = plugin.params["aggregation_fields"]
           @logger = logger
         end
 
