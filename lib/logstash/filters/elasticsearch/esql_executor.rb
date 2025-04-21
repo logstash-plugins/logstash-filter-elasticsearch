@@ -54,12 +54,7 @@ module LogStash
 
         def inform_warning(response)
           return unless (warning = response&.headers&.dig('warning'))
-          @logger.warn("ES|QL query execution warning: ", { message: warning })
-        end
-
-        def handle_errors(response)
-          return unless response&.headers&.dig("warning")
-          @logger.warn("ES|QL query execution warning: ", message: response.headers['warning'])
+          @logger.warn("ES|QL executor received warning", { message: warning })
         end
 
         def add_requested_fields(event, response)
