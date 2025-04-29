@@ -54,7 +54,7 @@ if [type] == "end" {
 
 The example below reproduces the above example but utilises the query_template.
 This query_template represents a full Elasticsearch query DSL and supports the
-standard Logstash field substitution syntax.  The example below issues
+standard {ls} field substitution syntax. The example below issues
 the same query as the first example but uses the template shown.
 
 [source,ruby]
@@ -118,6 +118,55 @@ Authentication to a secure Elasticsearch cluster is possible using _one_ of the 
 Authorization to a secure Elasticsearch cluster requires `read` permission at index level and `monitoring` permissions at cluster level.
 The `monitoring` permission at cluster level is necessary to perform periodic connectivity checks.
 
+[id="plugins-{type}s-{plugin}-esql"]
+==== ES|QL support
+{es} Query Language (ES|QL) provides a SQL-like interface for querying your {es} data.
+
+To utilize the ES|QL feature with this plugin, the following version requirements must be met:
+[cols="1,2",options="header"]
+|===
+|Component |Minimum version
+|{es} |8.11.0 or newer
+|{ls} |8.17.4 or newer
+|This plugin |4.23.0+ (4.x series) or 5.2.0+ (5.x series)
+|===
+
+To configure ES|QL query in the plugin, set your ES|QL query in the `query` parameter.
+
+IMPORTANT: We recommend understanding https://www.elastic.co/guide/en/elasticsearch/reference/current/esql-limitations.html[ES|QL current limitations] before using it in production environments.
+
+The following is a basic ES|QL query that sets food name to transaction event based on event's food ID:
+[source, ruby]
+    filter {
+      elasticsearch {
+        hosts => [ 'https://..']
+        api_key => '....'
+        query => '
+          FROM food-index
+            | WHERE id = "?food_id"
+        '
+        fields => { "name" => "food_name" }
+        query_params => {
+          named_params => ["food_id" => "%{[food_id]}"]
+          drop_null_columns => true
+        }
+      }
+    }
+
+Set `config.support_escapes: true` in `logstash.yml` if you need to escape special chars in the query.
+
+NOTE: With ES|QL query, {ls} doesn't generate `event.original`.
+
+In the result event, the plugin sets total result size in `[@metadata][total_values]` field. It also limits the result size to 1 when `FROM` query is used.
+
+Consider the following caveat scenarios:
+
+- ES|QL by default returns entire columns even if their values are `null`. The plugin provides a `drop_null_columns` option via <<plugins-{type}s-{plugin}-query_params>>. Enabling this parameter instructs {es} to automatically exclude columns with null values from query results.
+- If your {es} index uses https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/multi-fields[multi-fields] mapping(s), ES|QL query fetches all parent and sub-fields fields. Since {ls} events cannot contain parent field's concrete value and sub-field values together, we recommend using the `DROP` keyword in your ES|QL query explicitly remove sub-fields.
+- If your {es} index contains top level `tags` field, this will conflict with {ls} event's reserved `tags` field. {ls} moves `tags` field values to the `_tags` and populates `tags` with `["_tagsparsefailure"]`.
+
+For comprehensive ES|QL syntax reference and best practices, see the https://www.elastic.co/guide/en/elasticsearch/reference/current/esql-syntax.html[official {es} documentation].
+
 [id="plugins-{type}s-{plugin}-options"]
 ==== Elasticsearch Filter Configuration Options
 
@@ -143,6 +192,7 @@ NOTE: As of version `4.0.0` of this plugin, a number of previously deprecated se
 | <<plugins-{type}s-{plugin}-password>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-proxy>> |<<uri,uri>>|No
 | <<plugins-{type}s-{plugin}-query>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-query_params>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-query_template>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-result_size>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-retry_on_failure>> |<<number,number>>|No
@@ -343,6 +393,19 @@ Elasticsearch query string. More information is available in the
 {ref}/query-dsl-query-string-query.html#query-string-syntax[Elasticsearch query
 string documentation].
 Use either `query` or `query_template`.
+
+[id="plugins-{type}s-{plugin}-query_params"]
+===== `query_params`
+Parameters to send to {es} together with <<plugins-{type}s-{plugin}-query>>.
+
+Accepted options:
+[cols="2,1,3",options="header"]
+|===
+|Option name |Default value | Description
+
+|`drop_null_columns` |`false` | Requests {es} to filter out `null` columns
+|`named_params` |[] | List of named parameters and their matches used in the `query`
+|===
 
 
 [id="plugins-{type}s-{plugin}-query_template"]

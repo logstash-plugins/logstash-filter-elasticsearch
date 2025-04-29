@@ -63,6 +63,10 @@ module LogStash
         @client.info
       end
 
+      def es_version
+        @es_version ||= info&.dig('version', 'number')
+      end
+
       def build_flavor
         @build_flavor ||= info&.dig('version', 'build_flavor')
       end

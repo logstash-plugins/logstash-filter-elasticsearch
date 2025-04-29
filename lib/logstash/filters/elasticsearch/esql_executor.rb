@@ -7,7 +7,10 @@ module LogStash
 
         def initialize(plugin, logger)
           @plugin = plugin
-          @esql_params = plugin.params["esql_params"]
+
+          params = plugin.params["query_params"] || {}
+          @drop_null_columns = params["drop_null_columns"] || false
+          @named_params = params["named_params"] || []
           @query = plugin.params["query"]
           @fields = plugin.params["fields"]
           @tag_on_failure = plugin.params["tag_on_failure"]
@@ -15,7 +18,7 @@ module LogStash
         end
 
         def process(client, event)
-          resolved_params = @esql_params&.any? ? resolve_parameters(event) : []
+          resolved_params = @named_params&.any? ? resolve_parameters(event) : []
           response = execute_query(client, resolved_params)
           inform_warning(response)
           process_response(event, response)
@@ -28,7 +31,7 @@ module LogStash
         private
 
         def resolve_parameters(event)
-          @esql_params.map do |entry|
+          @named_params.map do |entry|
             entry.each_with_object({}) do |(key, value), new_entry|
               begin
                 new_entry[key] = event.sprintf(value)
@@ -42,13 +45,14 @@ module LogStash
 
         def execute_query(client, params)
           @logger.debug("Executing ES|QL query", query: @query, params: params)
-          client.search({ body: { query: @query, params: params }, format: 'json' }, 'esql')
+          client.search({ body: { query: @query, params: params }, format: 'json', drop_null_columns: @drop_null_columns }, 'esql')
         end
 
         def process_response(event, response)
           return unless response['values'] && response['columns']
 
-          event.set("[@metadata][total_hits]", response['values'].size)
+          # TODO: set to the target field once target support is added
+          event.set("[@metadata][total_values]", response['values'].size)
           add_requested_fields(event, response)
         end
 
