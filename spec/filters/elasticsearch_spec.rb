@@ -864,6 +864,33 @@ describe LogStash::Filters::Elasticsearch do
     end
   end
 
+  context "setting target" do
+
+    describe "when `@target` is nil, default behavior" do
+      let(:config) {{ }}
+
+      it "sets the value directly to the top-level event field" do
+        plugin.send(:set_to_event_target, event, "new_field", %w[value1 value2])
+        expect(event.get("new_field")).to eq(%w[value1 value2])
+      end
+    end
+
+    describe "when @target is defined" do
+      let(:config) {{ "target" => "nested" }}
+
+      it "creates a nested structure under the target field" do
+        plugin.send(:set_to_event_target, event, "new_field", %w[value1 value2])
+        expect(event.get("nested")).to eq({ "new_field" => %w[value1 value2] })
+      end
+
+      it "overwrites existing target field with new data" do
+        event.set("nested", { "existing_field" => "existing_value", "new_field" => "value0" })
+        plugin.send(:set_to_event_target, event, "new_field", ["value1"])
+        expect(event.get("nested")).to eq({ "existing_field" => "existing_value", "new_field" => "value1" })
+      end
+    end
+  end
+
   def extract_transport(client)
     # on 7x: client.transport.transport
     # on >=8.x: client.transport

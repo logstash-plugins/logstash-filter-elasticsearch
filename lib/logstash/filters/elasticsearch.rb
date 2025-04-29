@@ -2,12 +2,19 @@
 require "logstash/filters/base"
 require "logstash/namespace"
 require "logstash/json"
+require 'logstash/plugin_mixins/ecs_compatibility_support'
+require 'logstash/plugin_mixins/ecs_compatibility_support/target_check'
 require 'logstash/plugin_mixins/ca_trusted_fingerprint_support'
+require 'logstash/plugin_mixins/validator_support/field_reference_validation_adapter'
 require "monitor"
 
 require_relative "elasticsearch/client"
 
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
+
+  include LogStash::PluginMixins::ECSCompatibilitySupport
+  include LogStash::PluginMixins::ECSCompatibilitySupport::TargetCheck
+
   config_name "elasticsearch"
 
   # List of elasticsearch hosts to use for querying.
@@ -118,6 +125,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Tags the event on failure to look up geo information. This can be used in later analysis.
   config :tag_on_failure, :validate => :array, :default => ["_elasticsearch_lookup_failure"]
 
+  # If set, the the result set will be nested under the target field
+  config :target, :validate => :field_reference
+
   # How many times to retry on failure?
   config :retry_on_failure, :validate => :number, :default => 0
 
@@ -208,7 +218,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
           set = resultsHits.map do |doc|
             extract_value(doc["_source"], old_key_path)
           end
-          event.set(new_key, set.count > 1 ? set : set.first)
+          set_to_event_target(event, new_key, set)
         end
         @docinfo_fields.each do |old_key, new_key|
           old_key_path = extract_path(old_key)
@@ -255,6 +265,24 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   private
+
+  # if @target is defined, creates a nested structure to inject result into target field
+  # if not defined, directly sets to the top-level event field
+  # @param event [LogStash::Event]
+  # @param new_key [String] name of the field to set
+  # @param set_value [Array] value to set
+  # @return [void]
+  def set_to_event_target(event, new_key, set_value)
+    value_to_set = set_value.count > 1 ? set_value : set_value.first
+    if @target.nil?
+      event.set(new_key, value_to_set)
+    else
+      event_target = event.get(@target) || {}
+      @logger.debug("Overwriting existing target field", field: @target, existing_value: event_target) if @logger.debug? && event.include?(@target)
+      event_target[new_key] = value_to_set
+      event.set(@target, event_target)
+    end
+  end
 
   def client_options
     @client_options ||= {

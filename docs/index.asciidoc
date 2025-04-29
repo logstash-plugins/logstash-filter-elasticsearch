@@ -162,6 +162,7 @@ NOTE: As of version `4.0.0` of this plugin, a number of previously deprecated se
 | <<plugins-{type}s-{plugin}-ssl_truststore_type>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-ssl_verification_mode>> |<<string,string>>, one of `["full", "none"]`|No
 | <<plugins-{type}s-{plugin}-tag_on_failure>> |<<array,array>>|No
+| <<plugins-{type}s-{plugin}-target>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-user>> |<<string,string>>|No
 |=======================================================================
 
@@ -522,6 +523,42 @@ WARNING: Setting certificate verification to `none` disables many security benef
   * Default value is `["_elasticsearch_lookup_failure"]`
 
 Tags the event on failure to look up previous log event information. This can be used in later analysis.
+
+[id="plugins-{type}s-{plugin}-target"]
+===== `target`
+
+* Value type is <<string,string>>
+* There is no default value for this setting.
+
+Define the target field for placing the result data. If this setting is
+omitted, the result data will be stored at the root (top level) of the event.
+If `@fields` are set, the result data will be combined.
+
+For example, if you want the data to be put in the `operation` field:
+[source,ruby]
+if [type] == "end" {
+    filter {
+      query => "type:start AND transaction:%{[transactionId]}"
+      elasticsearch {
+        target => "transaction"
+        fields => {
+          "@timestamp" => "started"
+          "transaction_id" => "id"
+        }
+      }
+    }
+}
+
+`fields` fields will be expanded into a data structure in the `target` field, overall shape looks like this:
+[source,ruby]
+    {
+      "transaction" => {
+        "started" => "2025-04-29T12:01:46.263Z"
+        "id" => "1234567890"
+      }
+    }
+
+NOTE: if the `target` field already exists in the event, it will be overwritten.
 
 [id="plugins-{type}s-{plugin}-user"]
 ===== `user` 
