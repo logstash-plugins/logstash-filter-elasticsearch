@@ -8,8 +8,7 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
   let(:plugin) { LogStash::Filters::Elasticsearch.new(plugin_config) }
   let(:plugin_config) do
     {
-      "query_mode" => "esql",
-      "query" => "FROM test-index | STATS count() BY field"
+      "query" => "FROM test-index | STATS count() BY field | LIMIT 10"
     }
   end
   let(:esql_executor) { described_class.new(plugin, logger) }
@@ -17,7 +16,8 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
   describe "when initializes" do
     it "sets up the ESQL client with correct parameters" do
       expect(esql_executor.instance_variable_get(:@query)).to eq(plugin_config["query"])
-      expect(esql_executor.instance_variable_get(:@esql_params)).to eq([])
+      expect(esql_executor.instance_variable_get(:@named_params)).to eq([])
+      expect(esql_executor.instance_variable_get(:@drop_null_columns)).to eq(false)
       expect(esql_executor.instance_variable_get(:@fields)).to eq({})
       expect(esql_executor.instance_variable_get(:@tag_on_failure)).to eq(["_elasticsearch_lookup_failure"])
     end
@@ -28,8 +28,8 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
       super()
         .merge(
           {
-            "query" => "FROM my-index | WHERE field = ?foo",
-            "esql_params" => [{ "foo" => "%{bar}" }],
+            "query" => "FROM my-index | WHERE field = ?foo | LIMIT 5",
+            "query_params" => { "named_params" => [{ "foo" => "%{bar}" }] },
             "fields" => { "val" => "val_new" }
           })
     }
@@ -49,7 +49,7 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
     it "executes the query with resolved parameters" do
       allow(logger).to receive(:debug)
       expect(client).to receive(:search).with(
-        { body: { query: plugin_config["query"], params: [{ "foo" => "resolved_value" }] }, format: 'json' },
+        { body: { query: plugin_config["query"], params: [{ "foo" => "resolved_value" }] }, format: 'json', drop_null_columns: false, },
         'esql')
       resolved_params = esql_executor.send(:resolve_parameters, event)
       esql_executor.send(:execute_query, client, resolved_params)
@@ -62,7 +62,7 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
     end
 
     it "processes the response and adds metadata" do
-      expect(event).to receive(:set).with("[@metadata][total_hits]", 1)
+      expect(event).to receive(:set).with("[@metadata][total_values]", 1)
       expect(event).to receive(:set).with("val_new", "bar")
       esql_executor.send(:process_response, event, response)
     end
@@ -73,8 +73,9 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
       allow(response).to receive(:headers).and_return({})
       expect(client).to receive(:search).with(
         {
-          body: { query: plugin_config["query"], params: plugin_config["esql_params"] },
-          format: 'json'
+          body: { query: plugin_config["query"], params: plugin_config["query_params"]["named_params"] },
+          format: 'json',
+          drop_null_columns: false,
         },
         'esql'
       ).and_return(response)
