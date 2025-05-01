@@ -886,7 +886,7 @@ describe LogStash::Filters::Elasticsearch do
       it "overwrites existing target field with new data" do
         event.set("nested", { "existing_field" => "existing_value", "new_field" => "value0" })
         plugin.send(:set_to_event_target, event, "new_field", ["value1"])
-        expect(event.get("nested")).to eq({ "existing_field" => "existing_value", "new_field" => "value1" })
+        expect(event.get("nested")).to eq({ "existing_field" => "existing_value", "new_field" => ["value1"] })
       end
     end
   end

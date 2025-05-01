@@ -218,7 +218,8 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
           extracted_hit_values = resultsHits.map do |doc|
             extract_value(doc["_source"], old_key_path)
           end
-          set_to_event_target(event, new_key, extracted_hit_values)
+          value_to_set = extracted_hit_values.count > 1 ? extracted_hit_values : extracted_hit_values.first
+          set_to_event_target(event, new_key, value_to_set)
         end
         @docinfo_fields.each do |old_key, new_key|
           old_key_path = extract_path(old_key)
@@ -270,10 +271,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # if not defined, directly sets to the top-level event field
   # @param event [LogStash::Event]
   # @param new_key [String] name of the field to set
-  # @param values [Array] values to set
+  # @param value_to_set [Array] values to set
   # @return [void]
-  def set_to_event_target(event, new_key, values)
-    value_to_set = values.count > 1 ? values : values.first
+  def set_to_event_target(event, new_key, value_to_set)
     key_to_set = target ? "[#{target}][#{new_key}]" : new_key
 
     event.set(key_to_set, value_to_set)
