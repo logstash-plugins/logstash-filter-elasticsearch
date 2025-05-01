@@ -864,9 +864,9 @@ describe LogStash::Filters::Elasticsearch do
     end
   end
 
-  context "setting target" do
+  describe "setting target" do
 
-    describe "when `@target` is nil, default behavior" do
+    context "when `@target` is nil, default behavior" do
       let(:config) {{ }}
 
       it "sets the value directly to the top-level event field" do
@@ -875,7 +875,7 @@ describe LogStash::Filters::Elasticsearch do
       end
     end
 
-    describe "when @target is defined" do
+    context "when @target is defined" do
       let(:config) {{ "target" => "nested" }}
 
       it "creates a nested structure under the target field" do

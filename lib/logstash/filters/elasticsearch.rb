@@ -215,10 +215,10 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         matched = true
         @fields.each do |old_key, new_key|
           old_key_path = extract_path(old_key)
-          set = resultsHits.map do |doc|
+          extracted_hit_values = resultsHits.map do |doc|
             extract_value(doc["_source"], old_key_path)
           end
-          set_to_event_target(event, new_key, set)
+          set_to_event_target(event, new_key, extracted_hit_values)
         end
         @docinfo_fields.each do |old_key, new_key|
           old_key_path = extract_path(old_key)
@@ -233,7 +233,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       if !resultsAggs.nil? && !resultsAggs.empty?
         matched = true
         @aggregation_fields.each do |agg_name, ls_field|
-          event.set(ls_field, resultsAggs[agg_name])
+          set_to_event_target(event, ls_field, resultsAggs[agg_name])
         end
       end
 
@@ -270,18 +270,13 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # if not defined, directly sets to the top-level event field
   # @param event [LogStash::Event]
   # @param new_key [String] name of the field to set
-  # @param set_value [Array] value to set
+  # @param values [Array] values to set
   # @return [void]
-  def set_to_event_target(event, new_key, set_value)
-    value_to_set = set_value.count > 1 ? set_value : set_value.first
-    if @target.nil?
-      event.set(new_key, value_to_set)
-    else
-      event_target = event.get(@target) || {}
-      @logger.debug("Overwriting existing target field", field: @target, existing_value: event_target) if @logger.debug? && event.include?(@target)
-      event_target[new_key] = value_to_set
-      event.set(@target, event_target)
-    end
+  def set_to_event_target(event, new_key, values)
+    value_to_set = values.count > 1 ? values : values.first
+    key_to_set = target ? "[#{target}][#{new_key}]" : new_key
+
+    event.set(key_to_set, value_to_set)
   end
 
   def client_options
