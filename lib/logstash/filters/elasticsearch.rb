@@ -223,10 +223,11 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         end
         @docinfo_fields.each do |old_key, new_key|
           old_key_path = extract_path(old_key)
-          set = resultsHits.map do |doc|
+          extracted_docs_info = resultsHits.map do |doc|
             extract_value(doc, old_key_path)
           end
-          event.set(new_key, set.count > 1 ? set : set.first)
+          value_to_set = extracted_docs_info.count > 1 ? extracted_docs_info : extracted_docs_info.first
+          set_to_event_target(event, new_key, value_to_set)
         end
       end
 

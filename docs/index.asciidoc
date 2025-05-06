@@ -176,8 +176,11 @@ filter plugins.
 
   * Value type is <<hash,hash>>
   * Default value is `{}`
+  * Format: `"aggregation_name" => "[path][on][event]"`:
+  ** `aggregation_name`: aggregation name in result from {es}
+  ** `[path][on][event]`: path for where to place the value on the current event, using field-reference notation
 
-Hash of aggregation names to copy from elasticsearch response into Logstash event fields
+A mapping of aggregations to copy into the <<plugins-{type}s-{plugin}-target>> of the current event.
 
 Example:
 [source,ruby]
@@ -247,8 +250,11 @@ These custom headers will override any headers previously set by the plugin such
 
   * Value type is <<hash,hash>>
   * Default value is `{}`
+  * Format: `"path.in.source" => "[path][on][event]"`:
+  ** `path.in.source`: field path in document source of result from {es}, using dot-notation
+  ** `[path][on][event]`: path for where to place the value on the current event, using field-reference notation
 
-Hash of docinfo fields to copy from old event (found via elasticsearch) into new event
+A mapping of docinfo (`_source`) fields to copy into the <<plugins-{type}s-{plugin}-target>> of the current event.
 
 Example:
 [source,ruby]
@@ -274,9 +280,11 @@ Whether results should be sorted or not
 
   * Value type is <<array,array>>
   * Default value is `{}`
+  * Format: `"path.in.result" => "[path][on][event]"`:
+  ** `path.in.result`: field path in indexed result from {es}, using dot-notation
+  ** `[path][on][event]`: path for where to place the value on the current event, using field-reference notation
 
-An array of fields to copy from the old event (found via elasticsearch) into the
-new event, currently being processed.
+A mapping of indexed fields to copy into the <<plugins-{type}s-{plugin}-target>> of the current event.
 
 In the following example, the values of `@timestamp` and `event_id` on the event
 found via elasticsearch are copied to the current event's
