@@ -128,7 +128,7 @@ To utilize the ES|QL feature with this plugin, the following version requirement
 |Component |Minimum version
 |{es} |8.11.0 or newer
 |{ls} |8.17.4 or newer
-|This plugin |4.23.0+ (4.x series) or 5.2.0+ (5.x series)
+|This plugin |3.19.0+ (3.x series) or 4.3.0+ (4.x series)
 |===
 
 To configure ES|QL query in the plugin, set your ES|QL query in the `query` parameter.
