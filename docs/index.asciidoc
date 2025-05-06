@@ -396,7 +396,6 @@ Accepted options:
 |===
 |Option name |Default value | Description
 
-|`drop_null_columns` |`false` | Requests {es} to filter out `null` columns
 |`named_params` |[] | List of named parameters and their matches used in the `query`
 |===
 
