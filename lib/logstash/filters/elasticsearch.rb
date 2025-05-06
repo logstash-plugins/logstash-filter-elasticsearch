@@ -2,13 +2,20 @@
 require "logstash/filters/base"
 require "logstash/namespace"
 require "logstash/json"
+require 'logstash/plugin_mixins/ecs_compatibility_support'
+require 'logstash/plugin_mixins/ecs_compatibility_support/target_check'
 require 'logstash/plugin_mixins/ca_trusted_fingerprint_support'
 require "logstash/plugin_mixins/normalize_config_support"
+require 'logstash/plugin_mixins/validator_support/field_reference_validation_adapter'
 require "monitor"
 
 require_relative "elasticsearch/client"
 
 class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
+
+  include LogStash::PluginMixins::ECSCompatibilitySupport
+  include LogStash::PluginMixins::ECSCompatibilitySupport::TargetCheck
+
   config_name "elasticsearch"
 
   # List of elasticsearch hosts to use for querying.
@@ -131,6 +138,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Tags the event on failure to look up geo information. This can be used in later analysis.
   config :tag_on_failure, :validate => :array, :default => ["_elasticsearch_lookup_failure"]
 
+  # If set, the the result set will be nested under the target field
+  config :target, :validate => :field_reference
+
   # How many times to retry on failure?
   config :retry_on_failure, :validate => :number, :default => 0
 
@@ -214,17 +224,19 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
         matched = true
         @fields.each do |old_key, new_key|
           old_key_path = extract_path(old_key)
-          set = resultsHits.map do |doc|
+          extracted_hit_values = resultsHits.map do |doc|
             extract_value(doc["_source"], old_key_path)
           end
-          event.set(new_key, set.count > 1 ? set : set.first)
+          value_to_set = extracted_hit_values.count > 1 ? extracted_hit_values : extracted_hit_values.first
+          set_to_event_target(event, new_key, value_to_set)
         end
         @docinfo_fields.each do |old_key, new_key|
           old_key_path = extract_path(old_key)
-          set = resultsHits.map do |doc|
+          extracted_docs_info = resultsHits.map do |doc|
             extract_value(doc, old_key_path)
           end
-          event.set(new_key, set.count > 1 ? set : set.first)
+          value_to_set = extracted_docs_info.count > 1 ? extracted_docs_info : extracted_docs_info.first
+          set_to_event_target(event, new_key, value_to_set)
         end
       end
 
@@ -232,7 +244,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
       if !resultsAggs.nil? && !resultsAggs.empty?
         matched = true
         @aggregation_fields.each do |agg_name, ls_field|
-          event.set(ls_field, resultsAggs[agg_name])
+          set_to_event_target(event, ls_field, resultsAggs[agg_name])
         end
       end
 
@@ -264,6 +276,18 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   private
+
+  # if @target is defined, creates a nested structure to inject result into target field
+  # if not defined, directly sets to the top-level event field
+  # @param event [LogStash::Event]
+  # @param new_key [String] name of the field to set
+  # @param value_to_set [Array] values to set
+  # @return [void]
+  def set_to_event_target(event, new_key, value_to_set)
+    key_to_set = target ? "[#{target}][#{new_key}]" : new_key
+
+    event.set(key_to_set, value_to_set)
+  end
 
   def client_options
     @client_options ||= {

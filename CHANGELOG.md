@@ -1,3 +1,6 @@
+## 3.18.0
+  - Add `target` configuration option to store the result into it [#197](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/197)
+
 ## 3.17.1
   - Add elastic-transport client support used in elasticsearch-ruby 8.x [#193](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/193)
 
