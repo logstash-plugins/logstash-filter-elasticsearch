@@ -530,9 +530,10 @@ Tags the event on failure to look up previous log event information. This can be
 * Value type is <<string,string>>
 * There is no default value for this setting.
 
-Define the target field for placing the result data. If this setting is
-omitted, the result data will be stored at the root (top level) of the event.
-If `@fields` are set, the result data will be combined.
+Define the target field for placing the result data.
+If this setting is omitted, the target will be the root (top level) of the event.
+
+The destination fields specified in <<plugins-{type}s-{plugin}-fields>>, <<plugins-{type}s-{plugin}-aggregation_fields>>, and <<plugins-{type}s-{plugin}-docinfo_fields>> are relative to this target.
 
 For example, if you want the data to be put in the `operation` field:
 [source,ruby]
@@ -558,7 +559,7 @@ if [type] == "end" {
       }
     }
 
-NOTE: if the `target` field already exists in the event, it will be overwritten.
+NOTE: when writing to a field that already exists on the event, the previous value will be overwritten.
 
 [id="plugins-{type}s-{plugin}-user"]
 ===== `user` 

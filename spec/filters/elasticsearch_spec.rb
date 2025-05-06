@@ -864,7 +864,7 @@ describe LogStash::Filters::Elasticsearch do
     end
   end
 
-  describe "setting target" do
+  describe "#set_to_event_target" do
 
     context "when `@target` is nil, default behavior" do
       let(:config) {{ }}
