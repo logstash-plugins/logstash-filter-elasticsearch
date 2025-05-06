@@ -7,14 +7,19 @@ module LogStash
 
         def initialize(plugin, logger)
           @plugin = plugin
+          @logger = logger
 
-          params = plugin.params["query_params"] || {}
-          @drop_null_columns = params["drop_null_columns"] || false
-          @named_params = params["named_params"] || []
           @query = plugin.params["query"]
+          if @query.strip.start_with?("FROM") && !@query.match?(/\|\s*LIMIT/)
+            @logger.warn("ES|QL query doesn't contain LIMIT, adding `| LIMIT 1` to optimize the performance")
+            @query.concat(' | LIMIT 1')
+          end
+
+          query_params = plugin.params["query_params"] || {}
+          @named_params = query_params["named_params"] || []
           @fields = plugin.params["fields"]
           @tag_on_failure = plugin.params["tag_on_failure"]
-          @logger = logger
+          @logger.debug("ES|QL query executor initialized with ", query: @query, named_params: @named_params)
         end
 
         def process(client, event)
@@ -34,8 +39,11 @@ module LogStash
           @named_params.map do |entry|
             entry.each_with_object({}) do |(key, value), new_entry|
               begin
-                new_entry[key] = event.sprintf(value)
+                resolved_value = event.get(value)
+                @logger.debug("Resolved value for #{key}: #{resolved_value}, its class: #{resolved_value.class}")
+                new_entry[key] = resolved_value
               rescue => e
+                # catches invalid field reference
                 @logger.error("Failed to resolve parameter", key: key, value: value, error: e.message)
                 raise
               end
@@ -44,16 +52,30 @@ module LogStash
         end
 
         def execute_query(client, params)
+          # debug logs  may help to check what query shape the plugin is sending to ES
           @logger.debug("Executing ES|QL query", query: @query, params: params)
-          client.search({ body: { query: @query, params: params }, format: 'json', drop_null_columns: @drop_null_columns }, 'esql')
+          client.search({ body: { query: @query, params: params }, format: 'json', drop_null_columns: true }, 'esql')
         end
 
         def process_response(event, response)
-          return unless response['values'] && response['columns']
+          columns = response['columns'].freeze
+          values = response['values'].freeze
+          if values.nil? || values.size == 0
+            @logger.debug("Empty ES|QL query result", columns: columns, values: values)
+            return
+          end
 
-          # TODO: set to the target field once target support is added
-          event.set("[@metadata][total_values]", response['values'].size)
-          add_requested_fields(event, response)
+          # this shouldn't never happen but just in case not crash the plugin
+          if columns.nil? || columns.size == 0
+            @logger.error("No columns exist but received values", columns: columns, values: values)
+            return
+          end
+
+          # TODO: do we need to set `total_hits` to target?
+          #   if not, how do we resolve conflict with existing es-input total_hits field?
+          #   FYI: with DSL it stores in `[@metadata][total_hits]`
+          event.set("[@metadata][total_hits]", values.size)
+          add_requested_fields(event, columns, values)
         end
 
         def inform_warning(response)
@@ -61,13 +83,14 @@ module LogStash
           @logger.warn("ES|QL executor received warning", { message: warning })
         end
 
-        def add_requested_fields(event, response)
+        def add_requested_fields(event, columns, values)
           @fields.each do |old_key, new_key|
-            column_index = response['columns'].find_index { |col| col['name'] == old_key }
+            column_index = columns.find_index { |col| col['name'] == old_key }
             next unless column_index
 
-            values = response['values'].map { |entry| entry[column_index] }
-            event.set(new_key, values.one? ? values.first : values) if values&.size > 0
+            row_values = values.map { |entry| entry[column_index] }&.compact # remove non-exist field values with compact
+            # TODO: set to the target field once target support is added
+            event.set(new_key, row_values.one? ? row_values.first : row_values) if row_values&.size > 0
           end
         end
       end

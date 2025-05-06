@@ -891,6 +891,108 @@ describe LogStash::Filters::Elasticsearch do
     end
   end
 
+  describe "ES|QL" do
+
+    describe "compatibility" do
+      let(:config) {{ "hosts" => ["localhost:9200"], "query" => "FROM my-index" }}
+
+      context "when LS doesn't support ES|QL" do
+        let(:ls_version) { LogStash::Filters::Elasticsearch::LS_ESQL_SUPPORT_VERSION }
+        before(:each) do
+          stub_const("LOGSTASH_VERSION", "8.17.0")
+        end
+
+        it "raises a runtime error" do
+          expect { plugin.send(:validate_ls_version_for_esql_support!) }
+            .to raise_error(RuntimeError, /Current version of Logstash does not include Elasticsearch client which supports ES|QL. Please upgrade Logstash to at least #{ls_version}/)
+        end
+      end
+
+      context "when ES doesn't support ES|QL" do
+        let(:es_version) { LogStash::Filters::Elasticsearch::ES_ESQL_SUPPORT_VERSION }
+        let(:client) { double(:client) }
+
+        it "raises a runtime error" do
+          allow(plugin).to receive(:get_client).twice.and_return(client)
+          allow(client).to receive(:es_version).and_return("8.8.0")
+
+          expect { plugin.send(:validate_es_for_esql_support!) }
+            .to raise_error(RuntimeError, /Connected Elasticsearch 8.8.0 version does not supports ES|QL. ES|QL feature requires at least Elasticsearch #{es_version} version./)
+        end
+      end
+    end
+
+    context "when non-ES|QL params applied" do
+      let(:config) do
+        {
+          "hosts" => ["localhost:9200"],
+          "query" => "FROM my-index",
+          "index" => "some-index",
+          "docinfo_fields" => { "_index" => "es_index" },
+          "sort" => "@timestamp:desc",
+          "enable_sort" => true,
+          "aggregation_fields" => { "bytes_avg" => "bytes_avg_ls_field" }
+        }
+      end
+      it "raises a config error" do
+        invalid_params_with_esql = %w(index docinfo_fields sort enable_sort aggregation_fields)
+        error_text = /Configured #{invalid_params_with_esql} params cannot be used with ES|QL query/i
+        expect { plugin.register }.to raise_error LogStash::ConfigurationError, error_text
+      end
+    end
+
+    context "when `named_params` isn't array" do
+      let(:config) do
+        {
+          "hosts" => ["localhost:9200"],
+          "query" => "FROM my-index",
+          "query_params" => { "named_params" => {"a" => "b"} },
+        }
+      end
+      it "raises a config error" do
+        expect { plugin.register }.to raise_error LogStash::ConfigurationError, /`query_params => named_params` is required to be array/
+      end
+    end
+
+    context "when `named_params` exists but not placeholder in the query" do
+      let(:config) do
+        {
+          "hosts" => ["localhost:9200"],
+          "query" => "FROM my-index",
+          "query_params" => { "named_params" => [{"a" => "b"}] },
+        }
+      end
+      it "raises a config error" do
+        expect { plugin.register }.to raise_error LogStash::ConfigurationError, /Number of placeholders in `query` and `named_params` do not match/
+      end
+    end
+
+    context "when `named_params` doesn't exist but placeholder found" do
+      let(:config) do
+        {
+          "hosts" => ["localhost:9200"],
+          "query" => "FROM my-index | WHERE a = ?a"
+        }
+      end
+      it "raises a config error" do
+        expect { plugin.register }.to raise_error LogStash::ConfigurationError, /Number of placeholders in `query` and `named_params` do not match/
+      end
+    end
+
+    context "when placeholder and `named_params` do not match" do
+      let(:config) do
+        {
+          "hosts" => ["localhost:9200"],
+          "query" => "FROM my-index | WHERE type = ?type",
+          "query_params" => { "named_params" => [{"b" => "c"}] },
+        }
+      end
+      it "raises a config error" do
+        expect { plugin.register }.to raise_error LogStash::ConfigurationError, /Placeholder type not found in query/
+      end
+    end
+  end
+
   def extract_transport(client)
     # on 7x: client.transport.transport
     # on >=8.x: client.transport

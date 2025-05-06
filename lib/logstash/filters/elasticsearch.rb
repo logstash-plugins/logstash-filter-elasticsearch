@@ -145,7 +145,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   #   named params can be applied as following via query_params:
   #   query_params => {
   #     "named_params" => [ {"type" => "%{[type]}"}]
-  #     "drop_null_columns" => true
   #   }
   config :query_params, :validate => :hash, :default => {}
 
@@ -186,8 +185,11 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     query_type = resolve_query_type
     case query_type
     when "esql"
+      invalid_params_with_esql = original_params.keys & %w(index query_template sort docinfo_fields aggregation_fields enable_sort result_size)
+      raise LogStash::ConfigurationError, "Configured #{invalid_params_with_esql} params cannot be used with ES|QL query" if invalid_params_with_esql.any?
+
       validate_ls_version_for_esql_support!
-      validate_params_with_esql_query!
+      validate_esql_query_and_params!
       @esql_executor ||= LogStash::Filters::Elasticsearch::EsqlExecutor.new(self, @logger)
     else # dsl
       validate_dsl_query_settings!
@@ -469,19 +471,25 @@ end
     end
   end
 
-  def validate_params_with_esql_query!
-    invalid_params_with_esql = original_params.keys & %w(index query_template sort docinfo_fields aggregation_fields enable_sort result_size)
-    fail("Configured #{invalid_params_with_esql} params cannot be used with ES|QL query") if invalid_params_with_esql.any?
-
-    accepted_query_params = %w(named_params drop_null_columns)
+  def validate_esql_query_and_params!
+    accepted_query_params = %w(named_params)
     original_query_params = original_params["query_params"] ||= {}
     invalid_query_params = original_query_params.keys - accepted_query_params
-    fail("#{accepted_query_params} options are accepted in `query_params`, but found #{invalid_query_params} invalid option(s)") if invalid_query_params.any?
+    raise LogStash::ConfigurationError, "#{accepted_query_params} option(s) accepted in `query_params`, but found #{invalid_query_params} invalid option(s)" if invalid_query_params.any?
 
     is_named_params_array = original_query_params["named_params"] ? original_query_params["named_params"].class.eql?(Array) : true
-    fail("`query_params => named_params` is required to be array") unless is_named_params_array
+    raise LogStash::ConfigurationError, "`query_params => named_params` is required to be array" unless is_named_params_array
 
-    # TODO: validate that placeholders in query should match the named_params
+    named_params = original_query_params["named_params"] ||= []
+    named_params_keys = named_params.map(&:keys).flatten
+
+    placeholders = @query.scan(/\?(\w+)/).flatten
+    raise LogStash::ConfigurationError, "Number of placeholders in `query` and `named_params` do not match" unless placeholders.size == named_params_keys.size
+
+    placeholders.each do |placeholder|
+      placeholder.delete_prefix!("?")
+      raise LogStash::ConfigurationError, "Placeholder #{placeholder} not found in query" unless named_params_keys.include?(placeholder)
+    end
   end
 
   def validate_es_for_esql_support!

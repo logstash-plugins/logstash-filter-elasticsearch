@@ -135,7 +135,7 @@ To configure ES|QL query in the plugin, set your ES|QL query in the `query` para
 
 IMPORTANT: We recommend understanding https://www.elastic.co/guide/en/elasticsearch/reference/current/esql-limitations.html[ES|QL current limitations] before using it in production environments.
 
-The following is a basic ES|QL query that sets food name to transaction event based on event's food ID:
+The following is a basic ES|QL query that sets food name to transaction event based on upstream event's food ID:
 [source, ruby]
     filter {
       elasticsearch {
@@ -145,27 +145,20 @@ The following is a basic ES|QL query that sets food name to transaction event ba
           FROM food-index
             | WHERE id = "?food_id"
         '
-        fields => { "name" => "food_name" }
         query_params => {
-          named_params => ["food_id" => "%{[food_id]}"]
-          drop_null_columns => true
+          named_params => ["food_id" => "[food][id]"]
         }
+        fields => { "food.name" => "food_name" }
       }
     }
 
 Set `config.support_escapes: true` in `logstash.yml` if you need to escape special chars in the query.
 
-NOTE: With ES|QL query, {ls} doesn't generate `event.original`.
+In the result event, the plugin sets total result size in `[@metadata][total_hits]` field. It also limits the result size to 1 when `FROM` query is used.
 
-In the result event, the plugin sets total result size in `[@metadata][total_values]` field. It also limits the result size to 1 when `FROM` query is used.
+NOTE: If `FROM` execution command used and not `LIMIT` is set, the plugin attaches `| LIMIT 1`.
 
-Consider the following caveat scenarios:
-
-- ES|QL by default returns entire columns even if their values are `null`. The plugin provides a `drop_null_columns` option via <<plugins-{type}s-{plugin}-query_params>>. Enabling this parameter instructs {es} to automatically exclude columns with null values from query results.
-- If your {es} index uses https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/multi-fields[multi-fields] mapping(s), ES|QL query fetches all parent and sub-fields fields. Since {ls} events cannot contain parent field's concrete value and sub-field values together, we recommend using the `DROP` keyword in your ES|QL query explicitly remove sub-fields.
-- If your {es} index contains top level `tags` field, this will conflict with {ls} event's reserved `tags` field. {ls} moves `tags` field values to the `_tags` and populates `tags` with `["_tagsparsefailure"]`.
-
-For comprehensive ES|QL syntax reference and best practices, see the https://www.elastic.co/guide/en/elasticsearch/reference/current/esql-syntax.html[official {es} documentation].
+For comprehensive ES|QL syntax reference and best practices, see the https://www.elastic.co/guide/en/elasticsearch/reference/current/esql-syntax.html[{es} ES|QL documentation].
 
 [id="plugins-{type}s-{plugin}-options"]
 ==== Elasticsearch Filter Configuration Options
