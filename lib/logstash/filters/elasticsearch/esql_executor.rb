@@ -88,7 +88,7 @@ module LogStash
             column_index = columns.find_index { |col| col['name'] == old_key }
             next unless column_index
 
-            row_values = values.map { |entry| entry[column_index] }&.compact # remove non-exist field values with compact
+            row_values = values[column_index]&.compact # remove non-exist field values with compact
             # TODO: set to the target field once target support is added
             event.set(new_key, row_values.one? ? row_values.first : row_values) if row_values&.size > 0
           end
