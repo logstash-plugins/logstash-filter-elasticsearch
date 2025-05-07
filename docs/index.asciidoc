@@ -119,17 +119,10 @@ Authorization to a secure Elasticsearch cluster requires `read` permission at in
 The `monitoring` permission at cluster level is necessary to perform periodic connectivity checks.
 
 [id="plugins-{type}s-{plugin}-esql"]
-==== ES|QL support
-{es} Query Language (ES|QL) provides a SQL-like interface for querying your {es} data.
+==== {esql} support
+{es} Query Language ({esql}) provides a SQL-like interface for querying your {es} data.
 
-To utilize the ES|QL feature with this plugin, the following version requirements must be met:
-[cols="1,2",options="header"]
-|===
-|Component |Minimum version
-|{es} |8.11.0 or newer
-|{ls} |8.17.4 or newer
-|This plugin |3.19.0+ (3.x series) or 4.3.0+ (4.x series)
-|===
+To use {esql}, this plugin needs to be installed in {ls} 8.17.4 or newer, and must be connected to {es} 8.11 or newer.
 
 To configure ES|QL query in the plugin, set your ES|QL query in the `query` parameter.
 

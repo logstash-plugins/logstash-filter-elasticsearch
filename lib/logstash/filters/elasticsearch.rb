@@ -483,11 +483,10 @@ end
     named_params = original_query_params["named_params"] ||= []
     named_params_keys = named_params.map(&:keys).flatten
 
-    placeholders = @query.scan(/\?(\w+)/).flatten
+    placeholders = @query.scan(/(?<=[?])[a-z_][a-z0-9_]*/i)
     raise LogStash::ConfigurationError, "Number of placeholders in `query` and `named_params` do not match" unless placeholders.size == named_params_keys.size
 
     placeholders.each do |placeholder|
-      placeholder.delete_prefix!("?")
       raise LogStash::ConfigurationError, "Placeholder #{placeholder} not found in query" unless named_params_keys.include?(placeholder)
     end
   end
