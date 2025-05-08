@@ -54,7 +54,7 @@ module LogStash
         def execute_query(client, params)
           # debug logs  may help to check what query shape the plugin is sending to ES
           @logger.debug("Executing ES|QL query", query: @query, params: params)
-          client.search({ body: { query: @query, params: params }, format: 'json', drop_null_columns: true }, 'esql')
+          client.esql_query({ body: { query: @query, params: params }, format: 'json', drop_null_columns: true }, 'esql')
         end
 
         def process_response(event, response)

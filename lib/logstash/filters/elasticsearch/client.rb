@@ -55,8 +55,12 @@ module LogStash
         @client = ::Elasticsearch::Client.new(client_options)
       end
 
-      def search(params={}, query_type = 'dsl')
-        query_type == 'esql' ? @client.esql.query(params) : @client.search(params)
+      def search(params={})
+        @client.search(params)
+      end
+      
+      def esql_query(params={})
+        @client.esql.query(params)
       end
 
       def info
