@@ -14,7 +14,7 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
   let(:esql_executor) { described_class.new(plugin, logger) }
 
   context "when initializes" do
-    it "sets up the ESQL client with correct parameters" do
+    it "sets up the ESQL executor with correct parameters" do
       allow(logger).to receive(:debug)
       expect(esql_executor.instance_variable_get(:@query)).to eq(plugin_config["query"])
       expect(esql_executor.instance_variable_get(:@named_params)).to eq([])
@@ -49,9 +49,8 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
     it "executes the query with resolved parameters" do
       allow(logger).to receive(:debug)
       expect(event).to receive(:get).with("[bar]").and_return("resolved_value")
-      expect(client).to receive(:search).with(
-        { body: { query: plugin_config["query"], params: [{ "foo" => "resolved_value" }] }, format: 'json', drop_null_columns: true, },
-        'esql')
+      expect(client).to receive(:esql_query).with(
+        { body: { query: plugin_config["query"], params: [{ "foo" => "resolved_value" }] }, format: 'json', drop_null_columns: true, })
       resolved_params = esql_executor.send(:resolve_parameters, event)
       esql_executor.send(:execute_query, client, resolved_params)
     end
@@ -72,14 +71,12 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
       allow(plugin).to receive(:decorate)
       allow(logger).to receive(:debug)
       allow(response).to receive(:headers).and_return({})
-      expect(client).to receive(:search).with(
+      expect(client).to receive(:esql_query).with(
         {
           body: { query: plugin_config["query"], params: [{"foo"=>"resolve_me"}] },
           format: 'json',
           drop_null_columns: true,
-        },
-        'esql'
-      ).and_return(response)
+        }).and_return(response)
 
       event = LogStash::Event.new({ "hello" => "world", "bar" => "resolve_me" })
       expect { esql_executor.process(client, event) }.to_not raise_error
@@ -100,7 +97,7 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
 
     it "tags on query execution failures" do
       allow(logger).to receive(:debug)
-      allow(client).to receive(:search).and_raise("Query execution error")
+      allow(client).to receive(:esql_query).and_raise("Query execution error")
 
       expect(logger).to receive(:error).with("Failed to process ES|QL filter", exception: instance_of(RuntimeError))
       expect(event).to receive(:tag).with("_elasticsearch_lookup_failure")
