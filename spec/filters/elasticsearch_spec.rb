@@ -625,7 +625,7 @@ describe LogStash::Filters::Elasticsearch do
       it "raises a config error" do
         expect { plugin.register }.to raise_error LogStash::ConfigurationError, /`query_params => named_params` is required to be array/
       end
-    end
+    end if LOGSTASH_VERSION >= '8.17.4'
 
     context "when `named_params` exists but not placeholder in the query" do
       let(:config) do
@@ -638,7 +638,7 @@ describe LogStash::Filters::Elasticsearch do
       it "doesn't complain since not used" do
         expect { plugin.send(:validate_esql_query_and_params!) }.not_to raise_error
       end
-    end
+    end if LOGSTASH_VERSION >= '8.17.4'
 
     context "when placeholder and `named_params` do not match" do
       let(:config) do
@@ -651,7 +651,7 @@ describe LogStash::Filters::Elasticsearch do
       it "raises a config error" do
         expect { plugin.register }.to raise_error LogStash::ConfigurationError, /Placeholder type not found in query/
       end
-    end
+    end if LOGSTASH_VERSION >= '8.17.4'
   end
 
   def extract_transport(client)
