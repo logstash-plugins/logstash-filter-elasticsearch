@@ -235,18 +235,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   private
 
-  # if @target is defined, creates a nested structure to inject result into target field
-  # if not defined, directly sets to the top-level event field
-  # @param event [LogStash::Event]
-  # @param new_key [String] name of the field to set
-  # @param value_to_set [Array] values to set
-  # @return [void]
-  def set_to_event_target(event, new_key, value_to_set)
-    key_to_set = target ? "[#{target}][#{new_key}]" : new_key
-
-    event.set(key_to_set, value_to_set)
-  end
-
   def client_options
     @client_options ||= {
       :user => @user,
@@ -438,9 +426,9 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     params['ssl_enabled'] = @ssl_enabled ||= Array(@hosts).all? { |host| host && host.to_s.start_with?("https") }
   end
 
-def resolve_query_type
-  @query&.strip&.match?(/\A(?:FROM|ROW|SHOW)/) ? "esql": "dsl"
-end
+  def resolve_query_type
+    @query&.strip&.match?(/\A(?:FROM|ROW|SHOW)/) ? "esql": "dsl"
+  end
 
   def validate_dsl_query_settings!
     #Load query if it exists
@@ -484,8 +472,6 @@ end
     named_params_keys = named_params.map(&:keys).flatten
 
     placeholders = @query.scan(/(?<=[?])[a-z_][a-z0-9_]*/i)
-    raise LogStash::ConfigurationError, "Number of placeholders in `query` and `named_params` do not match" unless placeholders.size == named_params_keys.size
-
     placeholders.each do |placeholder|
       raise LogStash::ConfigurationError, "Placeholder #{placeholder} not found in query" unless named_params_keys.include?(placeholder)
     end
@@ -493,8 +479,9 @@ end
 
   def validate_es_for_esql_support!
     # make sure connected ES supports ES|QL (8.11+)
-    es_supports_esql = Gem::Version.create(get_client.es_version) >= Gem::Version.create(ES_ESQL_SUPPORT_VERSION)
-    fail("Connected Elasticsearch #{get_client.es_version} version does not supports ES|QL. ES|QL feature requires at least Elasticsearch #{ES_ESQL_SUPPORT_VERSION} version.") unless es_supports_esql
+    @es_version ||= get_client.es_version
+    es_supports_esql = Gem::Version.create(@es_version) >= Gem::Version.create(ES_ESQL_SUPPORT_VERSION)
+    fail("Connected Elasticsearch #{@es_version} version does not supports ES|QL. ES|QL feature requires at least Elasticsearch #{ES_ESQL_SUPPORT_VERSION} version.") unless es_supports_esql
   end
 
 end #class LogStash::Filters::Elasticsearch

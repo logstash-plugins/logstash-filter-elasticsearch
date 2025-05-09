@@ -6,9 +6,9 @@ module LogStash
       class EsqlExecutor
 
         def initialize(plugin, logger)
-          @plugin = plugin
           @logger = logger
 
+          @event_decorator = plugin.method(:decorate)
           @query = plugin.params["query"]
           if @query.strip.start_with?("FROM") && !@query.match?(/\|\s*LIMIT/)
             @logger.warn("ES|QL query doesn't contain LIMIT, adding `| LIMIT 1` to optimize the performance")
@@ -20,6 +20,13 @@ module LogStash
           @fields = plugin.params["fields"]
           @tag_on_failure = plugin.params["tag_on_failure"]
           @logger.debug("ES|QL query executor initialized with ", query: @query, named_params: @named_params)
+
+          @target_field = plugin.params["target"]
+          if @target_field
+            def self.apply_target(path); "[#{@target_field}][#{path}]"; end
+          else
+            def self.apply_target(path); path; end
+          end
         end
 
         def process(client, event)
@@ -27,7 +34,7 @@ module LogStash
           response = execute_query(client, resolved_params)
           inform_warning(response)
           process_response(event, response)
-          @plugin.decorate(event)
+          @event_decorator.call(event)
         rescue => e
           @logger.error("Failed to process ES|QL filter", exception: e)
           @tag_on_failure.each { |tag| event.tag(tag) }
@@ -54,7 +61,7 @@ module LogStash
         def execute_query(client, params)
           # debug logs  may help to check what query shape the plugin is sending to ES
           @logger.debug("Executing ES|QL query", query: @query, params: params)
-          client.esql_query({ body: { query: @query, params: params }, format: 'json', drop_null_columns: true }, 'esql')
+          client.esql_query({ body: { query: @query, params: params }, format: 'json', drop_null_columns: true })
         end
 
         def process_response(event, response)
@@ -88,10 +95,21 @@ module LogStash
             column_index = columns.find_index { |col| col['name'] == old_key }
             next unless column_index
 
-            row_values = values[column_index]&.compact # remove non-exist field values with compact
-            # TODO: set to the target field once target support is added
-            event.set(new_key, row_values.one? ? row_values.first : row_values) if row_values&.size > 0
+            row_values = values.map { |entry| entry[column_index] }&.compact
+            value_to_set = row_values.count > 1 ? row_values : row_values.first
+            set_to_event_target(event, new_key, value_to_set) unless value_to_set.nil?
           end
+        end
+
+        # if @target is defined, creates a nested structure to inject result into target field
+        # if not defined, directly sets to the top-level event field
+        # @param event [LogStash::Event]
+        # @param new_key [String] name of the field to set
+        # @param value_to_set [Array] values to set
+        # @return [void]
+        def set_to_event_target(event, new_key, value_to_set)
+          key_to_set = self.apply_target(new_key)
+          event.set(key_to_set, value_to_set)
         end
       end
     end

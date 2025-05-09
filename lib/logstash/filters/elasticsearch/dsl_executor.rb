@@ -5,7 +5,6 @@ module LogStash
     class Elasticsearch
       class DslExecutor
         def initialize(plugin, logger)
-          @plugin = plugin
           @index = plugin.params["index"]
           @query = plugin.params["query"]
           @query_dsl = plugin.query_dsl
@@ -17,6 +16,13 @@ module LogStash
           @sort = plugin.params["sort"]
           @aggregation_fields = plugin.params["aggregation_fields"]
           @logger = logger
+          @event_decorator = plugin.method(:decorate)
+          @target_field = plugin.params["target"]
+          if @target_field
+            def self.apply_target(path); "[#{@target_field}][#{path}]"; end
+          else
+            def self.apply_target(path); path; end
+          end
         end
 
         def process(client, event)
@@ -46,17 +52,19 @@ module LogStash
               matched = true
               @fields.each do |old_key, new_key|
                 old_key_path = extract_path(old_key)
-                set = result_hits.map do |doc|
+                extracted_hit_values = result_hits.map do |doc|
                   extract_value(doc["_source"], old_key_path)
                 end
-                event.set(new_key, set.count > 1 ? set : set.first)
+                value_to_set = extracted_hit_values.count > 1 ? extracted_hit_values : extracted_hit_values.first
+                set_to_event_target(event, new_key, value_to_set)
               end
               @docinfo_fields.each do |old_key, new_key|
                 old_key_path = extract_path(old_key)
-                set = result_hits.map do |doc|
+                extracted_docs_info = result_hits.map do |doc|
                   extract_value(doc, old_key_path)
                 end
-                event.set(new_key, set.count > 1 ? set : set.first)
+                value_to_set = extracted_docs_info.count > 1 ? extracted_docs_info : extracted_docs_info.first
+                set_to_event_target(event, new_key, value_to_set)
               end
             end
 
@@ -64,7 +72,7 @@ module LogStash
             if !result_aggregations.nil? && !result_aggregations.empty?
               matched = true
               @aggregation_fields.each do |agg_name, ls_field|
-                event.set(ls_field, result_aggregations[agg_name])
+                set_to_event_target(event, ls_field, result_aggregations[agg_name])
               end
             end
 
@@ -78,7 +86,7 @@ module LogStash
             end
             @tag_on_failure.each { |tag| event.tag(tag) }
           else
-            @plugin.decorate(event) if matched
+            @event_decorator.call(event) if matched
           end
         end
 
@@ -116,6 +124,16 @@ module LogStash
           end
         end
 
+        # if @target is defined, creates a nested structure to inject result into target field
+        # if not defined, directly sets to the top-level event field
+        # @param event [LogStash::Event]
+        # @param new_key [String] name of the field to set
+        # @param value_to_set [Array] values to set
+        # @return [void]
+        def set_to_event_target(event, new_key, value_to_set)
+          key_to_set = self.apply_target(new_key)
+          event.set(key_to_set, value_to_set)
+        end
       end
     end
   end

@@ -68,7 +68,7 @@ module LogStash
       end
 
       def es_version
-        @es_version ||= info&.dig('version', 'number')
+        info&.dig('version', 'number')
       end
 
       def build_flavor

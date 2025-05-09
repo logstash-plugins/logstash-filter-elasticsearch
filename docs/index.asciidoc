@@ -375,10 +375,11 @@ environment variables e.g. `proxy => '${LS_PROXY:}'`.
   * Value type is <<string,string>>
   * There is no default value for this setting.
 
-Elasticsearch query string. More information is available in the
-{ref}/query-dsl-query-string-query.html#query-string-syntax[Elasticsearch query
-string documentation].
-Use either `query` or `query_template`.
+The query to be executed.
+Accepted query shape is DSL query string or ES|QL.
+For the DSL query string, use either `query` or `query_template`.
+Read the {ref}/query-dsl-query-string-query.html[{es} query
+string documentation] or {ref}/esql.html[{es} ES|QL documentation] for more information.
 
 [id="plugins-{type}s-{plugin}-query_params"]
 ===== `query_params`
@@ -391,7 +392,6 @@ Accepted options:
 
 |`named_params` |[] | List of named parameters and their matches used in the `query`
 |===
-
 
 [id="plugins-{type}s-{plugin}-query_template"]
 ===== `query_template` 
