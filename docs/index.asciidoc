@@ -179,7 +179,7 @@ NOTE: As of version `4.0.0` of this plugin, a number of previously deprecated se
 | <<plugins-{type}s-{plugin}-proxy>> |<<uri,uri>>|No
 | <<plugins-{type}s-{plugin}-query>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-query_type>> |<<string,string>>, one of `["dsl", "esql"]`|No
-| <<plugins-{type}s-{plugin}-query_params>> |<<hash,hash>>|No
+| <<plugins-{type}s-{plugin}-query_params>> |<<hash,hash>> or <<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-query_template>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-result_size>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-retry_on_failure>> |<<number,number>>|No
@@ -395,7 +395,7 @@ When `esql`, the query shape must be a valid {esql} string and `index`, `query_t
 [id="plugins-{type}s-{plugin}-query_params"]
 ===== `query_params`
 
-* The value type is <<hash,hash>>
+* The value type is <<hash,hash>> or <<array,array>>. When an array provided, the array elements are pairs of `key` and `value`.
 * There is no default value for this setting
 
 Named parameters in {esql} to send to {es} together with <<plugins-{type}s-{plugin}-query>>.

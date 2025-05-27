@@ -108,4 +108,42 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
     end
   end
 
+  describe "#query placeholders" do
+    before(:each) do
+      allow(logger).to receive(:debug)
+      plugin.send(:validate_esql_query_and_params!)
+    end
+
+    context "when `query_params` is an Array contains {key => val} entries" do
+      let(:plugin_config) {
+        super()
+          .merge(
+            {
+              "query" => "FROM my-index | LIMIT 1",
+              "query_params" => [{ "a" => "b" }, { "c" => "[b]" }, { "e" => 1 }, { "f" => "[g]" }],
+            })
+      }
+
+      it "separates references and static params at initialization" do
+        expect(esql_executor.instance_variable_get(:@referenced_params)).to eq({"c" => "[b]", "f" => "[g]"})
+        expect(esql_executor.instance_variable_get(:@static_params)).to eq([{"a" => "b"},  {"e" => 1}])
+      end
+    end
+
+    context "when `query_params` is a Hash" do
+      let(:plugin_config) {
+        super()
+          .merge(
+            {
+              "query" => "FROM my-index | LIMIT 1",
+              "query_params" => { "a" => "b", "c" => "[b]", "e" => 1, "f" => "[g]" },
+            })
+      }
+
+      it "separates references and static params at initialization" do
+        expect(esql_executor.instance_variable_get(:@referenced_params)).to eq({"c" => "[b]", "f" => "[g]"})
+        expect(esql_executor.instance_variable_get(:@static_params)).to eq([{"a" => "b"},  {"e" => 1}])
+      end
+    end
+  end
 end if LOGSTASH_VERSION >= LogStash::Filters::Elasticsearch::LS_ESQL_SUPPORT_VERSION

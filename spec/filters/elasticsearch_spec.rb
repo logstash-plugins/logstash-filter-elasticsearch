@@ -615,45 +615,88 @@ describe LogStash::Filters::Elasticsearch do
       end
     end
 
-    context "when placeholder doesn't exist in the query" do
+    describe "#query placeholder" do
       let(:config) do
         {
           "hosts" => ["localhost:9200"],
-          "query_type" => "esql",
-          "query" => "FROM my-index",
-          "query_params" => { "a" => "b" },
+          "query_type" => "esql"
         }
       end
-      it "doesn't complain since not used" do
-        expect { plugin.send(:validate_esql_query_and_params!) }.not_to raise_error
-      end
-    end if LOGSTASH_VERSION >= '8.17.4'
 
-    context "when illegal placeholders appear" do
-      let(:config) do
-        {
-          "hosts" => ["localhost:9200"],
-          "query_type" => "esql",
-          "query" => "FROM my-index | WHERE type = ?type",
-          "query_params" => { "1abcd_efg1" => "1", "$abcd_efg1" => 2, "type" => 3 },
+      context "when query placeholder doesn't exist in the query" do
+        let(:config) {
+          super()
+            .merge(
+              {
+                "query" => "FROM my-index",
+                "query_params" => { "a" => "b" },
+              })
         }
-      end
-      it "raises a config error" do
-        expect { plugin.register }.to raise_error LogStash::ConfigurationError, 'Illegal ["1abcd_efg1", "$abcd_efg1"] placeholder names in `query_params`'
-      end
-    end if LOGSTASH_VERSION >= '8.17.4'
 
-    context "when placeholder and `query_params` do not match" do
-      let(:config) do
-        {
-          "hosts" => ["localhost:9200"],
-          "query_type" => "esql",
-          "query" => "FROM my-index | WHERE type = ?type",
-          "query_params" => {"b" => "c"},
-        }
+        it "doesn't complain since not used" do
+          expect { plugin.send(:validate_esql_query_and_params!) }.not_to raise_error
+        end
       end
-      it "raises a config error" do
-        expect { plugin.register }.to raise_error LogStash::ConfigurationError, /Placeholder type not found in query/
+
+      context "when illegal placeholders appear" do
+        let(:config) {
+          super()
+            .merge(
+              {
+                "query" => "FROM my-index | WHERE type = ?type",
+                "query_params" => { "1abcd_efg1" => "1", "$abcd_efg1" => 2, "type" => 3 },
+              })
+        }
+        it "raises a config error" do
+          message = 'Illegal ["1abcd_efg1", "$abcd_efg1"] placeholder names in `query_params`. A valid parameter name starts with a letter and contains letters, digits and underscores only;'
+          expect { plugin.register }.to raise_error LogStash::ConfigurationError, message
+        end
+      end
+
+      context "when query placeholders and `query_params` do not match" do
+        let(:config) {
+          super()
+            .merge(
+              {
+                "query" => "FROM my-index | WHERE type = ?type",
+                "query_params" => {"b" => "c"},
+              })
+        }
+        it "raises a config error" do
+          expect { plugin.register }.to raise_error LogStash::ConfigurationError, /Placeholder type not found in query/
+        end
+      end
+
+      context "when `query_params` is an Array contains {key => val} entries" do
+        let(:config) {
+          super()
+            .merge(
+              {
+                "query" => "FROM my-index",
+                "query_params" => [{ "a" => "b" }, { "c" => "[b]" }, { "e" => 1 }, { "f" => "[g]" }],
+              })
+        }
+
+        it "doesn't complain since not used" do
+          expect { plugin.send(:validate_esql_query_and_params!) }.not_to raise_error
+          expect(plugin.query_params).to eq({ "a" => "b", "c" => "[b]", "e" => 1, "f" => "[g]" })
+        end
+      end
+
+      context "when `query_params` is a Hash" do
+        let(:config) {
+          super()
+            .merge(
+              {
+                "query" => "FROM my-index",
+                "query_params" => { "a" => "b", "c" => "[b]", "e" => 1, "f" => "[g]" },
+              })
+        }
+
+        it "doesn't complain since not used" do
+          expect { plugin.send(:validate_esql_query_and_params!) }.not_to raise_error
+          expect(plugin.query_params).to eq({ "a" => "b", "c" => "[b]", "e" => 1, "f" => "[g]" })
+        end
       end
     end if LOGSTASH_VERSION >= '8.17.4'
   end
