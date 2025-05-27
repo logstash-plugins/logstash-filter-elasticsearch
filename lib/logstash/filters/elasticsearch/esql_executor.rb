@@ -15,8 +15,10 @@ module LogStash
             @query.concat(' | LIMIT 1')
           end
 
-          query_params = plugin.params["query_params"] || {}
-          @referenced_params, static_valued_params = query_params.partition { |_, v| v.kind_of?(String) && v.match?(/^\[.*\]$/) }.map(&:to_h)
+          query_params = plugin.query_params || {}
+          reference_valued_params, static_valued_params = query_params.partition { |_, v| v.kind_of?(String) && v.match?(/^\[.*\]$/) }
+          @referenced_params = reference_valued_params&.to_h
+          # keep static params as an array of hashes to attach to the ES|QL api param easily
           @static_params = static_valued_params.map { |k, v| { k => v } }
           @fields = plugin.params["fields"]
           @tag_on_failure = plugin.params["tag_on_failure"]
@@ -49,7 +51,7 @@ module LogStash
             begin
               resolved_value = event.get(value)
               @logger.debug("Resolved value for #{key}: #{resolved_value}, its class: #{resolved_value.class}")
-              resolved_parameters << { key => resolved_value } if resolved_value
+              resolved_parameters << { key => resolved_value }
             rescue => e
               # catches invalid field reference
               @logger.error("Failed to resolve parameter", key: key, value: value, error: e.message)

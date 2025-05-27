@@ -144,12 +144,13 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
 
   # named placeholders in ES|QL query
   # example,
-  #   if the query is "FROM my-index | WHERE some_type = ?type"
+  #   if the query is "FROM my-index | WHERE some_type = ?type AND depth > ?min_depth"
   #   named placeholders can be applied as the following in query_params:
-  #   query_params => {
-  #     "type" => "%{[type]}"
-  #   }
-  config :query_params, :validate => :hash, :default => {}
+  #   query_params => [
+  #     {"type" => "%{[type]}"}
+  #     {"min_depth" => "%{[depth]}"}
+  #   ]
+  config :query_params, :validate => :array, :default => []
 
   config :ssl, :obsolete => "Set 'ssl_enabled' instead."
   config :ca_file, :obsolete => "Set 'ssl_certificate_authorities' instead."
@@ -462,8 +463,19 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def validate_esql_query_and_params!
+    # If Array, validate that query_params needs to contain only single-entry hashes, convert it to a Hash
+    if @query_params.kind_of?(Array)
+      illegal_entries = @query_params.reject {|e| e.kind_of?(Hash) && e.size == 1 }
+      raise LogStash::ConfigurationError, "`query_params` must contain only single-entry hashes. Illegal placeholders: #{illegal_entries}" if illegal_entries.any?
+
+      @query_params = @query_params.reduce({}, :merge)
+    end
+
     illegal_keys = @query_params.keys.reject {|k| k[/^[a-z_][a-z0-9_]*$/] }
-    raise LogStash::ConfigurationError, "Illegal #{illegal_keys} placeholder names in `query_params`" if illegal_keys.any?
+    if illegal_keys.any?
+      message = "Illegal #{illegal_keys} placeholder names in `query_params`. A valid parameter name starts with a letter and contains letters, digits and underscores only;"
+      raise LogStash::ConfigurationError, message
+    end
 
     placeholders = @query.scan(/(?<=[?])[a-z_][a-z0-9_]*/i)
     placeholders.each do |placeholder|
