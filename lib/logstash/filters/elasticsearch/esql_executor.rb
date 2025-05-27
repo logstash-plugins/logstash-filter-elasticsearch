@@ -15,11 +15,12 @@ module LogStash
             @query.concat(' | LIMIT 1')
           end
 
-          @query_params = plugin.params["query_params"] || {}
-
+          query_params = plugin.params["query_params"] || {}
+          @referenced_params, static_valued_params = query_params.partition { |_, v| v.kind_of?(String) && v.match?(/^\[.*\]$/) }.map(&:to_h)
+          @static_params = static_valued_params.map { |k, v| { k => v } }
           @fields = plugin.params["fields"]
           @tag_on_failure = plugin.params["tag_on_failure"]
-          @logger.debug("ES|QL query executor initialized with ", query: @query, query_params: @query_params)
+          @logger.debug("ES|QL query executor initialized with ", query: @query, query_params: query_params)
 
           @target_field = plugin.params["target"]
           if @target_field
@@ -30,7 +31,8 @@ module LogStash
         end
 
         def process(client, event)
-          resolved_params = @query_params&.any? ? resolve_parameters(event) : []
+          resolved_params = @referenced_params&.any? ? resolve_parameters(event) : []
+          resolved_params.concat(@static_params) if @static_params&.any?
           response = execute_query(client, resolved_params)
           inform_warning(response)
           process_response(event, response)
@@ -43,7 +45,7 @@ module LogStash
         private
 
         def resolve_parameters(event)
-          @query_params.each_with_object([]) do |(key, value), resolved_parameters|
+          @referenced_params.each_with_object([]) do |(key, value), resolved_parameters|
             begin
               resolved_value = event.get(value)
               @logger.debug("Resolved value for #{key}: #{resolved_value}, its class: #{resolved_value.class}")
@@ -77,7 +79,7 @@ module LogStash
           end
 
           event.set("[@metadata][total_values]", values.size)
-          # @logger.debug("Executing ES|QL values size ", values.size)
+          @logger.debug("Executing ES|QL values size ", values.size)
           add_requested_fields(event, columns, values)
         end
 

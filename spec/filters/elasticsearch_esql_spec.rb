@@ -18,7 +18,8 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
     it "sets up the ESQL executor with correct parameters" do
       allow(logger).to receive(:debug)
       expect(esql_executor.instance_variable_get(:@query)).to eq(plugin_config["query"])
-      expect(esql_executor.instance_variable_get(:@query_params)).to eq({})
+      expect(esql_executor.instance_variable_get(:@referenced_params)).to eq({})
+      expect(esql_executor.instance_variable_get(:@static_params)).to eq([])
       expect(esql_executor.instance_variable_get(:@fields)).to eq({})
       expect(esql_executor.instance_variable_get(:@tag_on_failure)).to eq(["_elasticsearch_lookup_failure"])
     end
