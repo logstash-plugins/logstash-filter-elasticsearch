@@ -23,7 +23,8 @@ describe LogStash::Filters::Elasticsearch, integration: true do
   end
   let(:config) do
     {
-      "hosts" => ES_HOSTS
+      "hosts" => ES_HOSTS,
+      "query_type" => "esql"
     }
   end
   let(:event) { LogStash::Event.new({}) }
@@ -35,7 +36,7 @@ describe LogStash::Filters::Elasticsearch, integration: true do
     is_ls_with_esql_supported_client = Gem::Version.create(LOGSTASH_VERSION) >= Gem::Version.create(LogStash::Filters::Elasticsearch::LS_ESQL_SUPPORT_VERSION)
     skip "LS version does not have ES client which supports ES|QL" unless is_ls_with_esql_supported_client
 
-    # Skip tests if ES version doesn't support ES||QL
+    # Skip tests if an ES version doesn't support ES||QL
     es_client = SECURE_INTEGRATION ?
                   Elasticsearch::Client.new(hosts: ES_HOSTS, user: 'tests', password: 'Tests123') :
                   Elasticsearch::Client.new(hosts: ES_HOSTS)
@@ -70,7 +71,7 @@ describe LogStash::Filters::Elasticsearch, integration: true do
     shared_examples "ESQL query execution" do |expected_count, fields|
       it "processes the event" do
         plugin.filter(event)
-        expect(event.get("[@metadata][total_hits]")).to eq(expected_count)
+        expect(event.get("[@metadata][total_values]")).to eq(expected_count)
         fields&.each do | old_key, new_key |
           expect(event.get(new_key)).not_to be(nil)
         end
@@ -128,7 +129,7 @@ describe LogStash::Filters::Elasticsearch, integration: true do
 
       it "processes the event" do
         plugin.filter(event)
-        expect(event.get("[@metadata][total_hits]")).to eq(6)
+        expect(event.get("[@metadata][total_values]")).to eq(6)
         expect(event.get("target_message").size).to eq(6)
         expect(event.get("target_count").size).to eq(5)
       end

@@ -567,7 +567,7 @@ describe LogStash::Filters::Elasticsearch do
   describe "ES|QL" do
 
     describe "compatibility" do
-      let(:config) {{ "hosts" => ["localhost:9200"], "query" => "FROM my-index" }}
+      let(:config) {{ "hosts" => ["localhost:9200"], "query_type" => "esql", "query" => "FROM my-index" }}
 
       context "when LS doesn't support ES|QL" do
         let(:ls_version) { LogStash::Filters::Elasticsearch::LS_ESQL_SUPPORT_VERSION }
@@ -599,6 +599,7 @@ describe LogStash::Filters::Elasticsearch do
       let(:config) do
         {
           "hosts" => ["localhost:9200"],
+          "query_type" => "esql",
           "query" => "FROM my-index",
           "index" => "some-index",
           "docinfo_fields" => { "_index" => "es_index" },
@@ -614,25 +615,13 @@ describe LogStash::Filters::Elasticsearch do
       end
     end
 
-    context "when `named_params` isn't array" do
+    context "when placeholder doesn't exist in the query" do
       let(:config) do
         {
           "hosts" => ["localhost:9200"],
+          "query_type" => "esql",
           "query" => "FROM my-index",
-          "query_params" => { "named_params" => {"a" => "b"} },
-        }
-      end
-      it "raises a config error" do
-        expect { plugin.register }.to raise_error LogStash::ConfigurationError, /`query_params => named_params` is required to be array/
-      end
-    end if LOGSTASH_VERSION >= '8.17.4'
-
-    context "when `named_params` exists but not placeholder in the query" do
-      let(:config) do
-        {
-          "hosts" => ["localhost:9200"],
-          "query" => "FROM my-index",
-          "query_params" => { "named_params" => [{"a" => "b"}] },
+          "query_params" => { "a" => "b" },
         }
       end
       it "doesn't complain since not used" do
@@ -640,12 +629,27 @@ describe LogStash::Filters::Elasticsearch do
       end
     end if LOGSTASH_VERSION >= '8.17.4'
 
-    context "when placeholder and `named_params` do not match" do
+    context "when illegal placeholders appear" do
       let(:config) do
         {
           "hosts" => ["localhost:9200"],
+          "query_type" => "esql",
           "query" => "FROM my-index | WHERE type = ?type",
-          "query_params" => { "named_params" => [{"b" => "c"}] },
+          "query_params" => { "1abcd_efg1" => "1", "$abcd_efg1" => 2, "type" => 3 },
+        }
+      end
+      it "raises a config error" do
+        expect { plugin.register }.to raise_error LogStash::ConfigurationError, 'Illegal ["1abcd_efg1", "$abcd_efg1"] placeholder names in `query_params`'
+      end
+    end if LOGSTASH_VERSION >= '8.17.4'
+
+    context "when placeholder and `query_params` do not match" do
+      let(:config) do
+        {
+          "hosts" => ["localhost:9200"],
+          "query_type" => "esql",
+          "query" => "FROM my-index | WHERE type = ?type",
+          "query_params" => {"b" => "c"},
         }
       end
       it "raises a config error" do
