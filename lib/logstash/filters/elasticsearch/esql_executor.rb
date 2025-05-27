@@ -47,15 +47,14 @@ module LogStash
         private
 
         def resolve_parameters(event)
-          @referenced_params.each_with_object([]) do |(key, value), resolved_parameters|
+          @referenced_params.map do |key, value|
             begin
               resolved_value = event.get(value)
               @logger.debug("Resolved value for #{key}: #{resolved_value}, its class: #{resolved_value.class}")
-              resolved_parameters << { key => resolved_value }
+              { key => resolved_value }
             rescue => e
               # catches invalid field reference
-              @logger.error("Failed to resolve parameter", key: key, value: value, error: e.message)
-              raise
+              raise "Failed to resolve parameter `#{key}` with `#{value}`. Error: #{e.message}"
             end
           end
         end
