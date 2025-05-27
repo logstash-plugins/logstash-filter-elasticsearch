@@ -10,16 +10,16 @@ module LogStash
 
           @event_decorator = plugin.method(:decorate)
           @query = plugin.params["query"]
-          if @query.strip.start_with?("FROM") && !@query.match?(/\|\s*LIMIT/)
+          unless @query.match?(/\|\s*LIMIT/)
             @logger.warn("ES|QL query doesn't contain LIMIT, adding `| LIMIT 1` to optimize the performance")
             @query.concat(' | LIMIT 1')
           end
 
-          query_params = plugin.params["query_params"] || {}
-          @named_params = query_params["named_params"] || []
+          @query_params = plugin.params["query_params"] || {}
+
           @fields = plugin.params["fields"]
           @tag_on_failure = plugin.params["tag_on_failure"]
-          @logger.debug("ES|QL query executor initialized with ", query: @query, named_params: @named_params)
+          @logger.debug("ES|QL query executor initialized with ", query: @query, query_params: @query_params)
 
           @target_field = plugin.params["target"]
           if @target_field
@@ -30,7 +30,7 @@ module LogStash
         end
 
         def process(client, event)
-          resolved_params = @named_params&.any? ? resolve_parameters(event) : []
+          resolved_params = @query_params&.any? ? resolve_parameters(event) : []
           response = execute_query(client, resolved_params)
           inform_warning(response)
           process_response(event, response)
@@ -43,45 +43,41 @@ module LogStash
         private
 
         def resolve_parameters(event)
-          @named_params.map do |entry|
-            entry.each_with_object({}) do |(key, value), new_entry|
-              begin
-                resolved_value = event.get(value)
-                @logger.debug("Resolved value for #{key}: #{resolved_value}, its class: #{resolved_value.class}")
-                new_entry[key] = resolved_value
-              rescue => e
-                # catches invalid field reference
-                @logger.error("Failed to resolve parameter", key: key, value: value, error: e.message)
-                raise
-              end
+          @query_params.each_with_object([]) do |(key, value), resolved_parameters|
+            begin
+              resolved_value = event.get(value)
+              @logger.debug("Resolved value for #{key}: #{resolved_value}, its class: #{resolved_value.class}")
+              resolved_parameters << { key => resolved_value } if resolved_value
+            rescue => e
+              # catches invalid field reference
+              @logger.error("Failed to resolve parameter", key: key, value: value, error: e.message)
+              raise
             end
           end
         end
 
         def execute_query(client, params)
-          # debug logs  may help to check what query shape the plugin is sending to ES
+          # debug logs may help to check what query shape the plugin is sending to ES
           @logger.debug("Executing ES|QL query", query: @query, params: params)
           client.esql_query({ body: { query: @query, params: params }, format: 'json', drop_null_columns: true })
         end
 
         def process_response(event, response)
-          columns = response['columns'].freeze
-          values = response['values'].freeze
+          columns = response['columns']&.freeze || []
+          values = response['values']&.freeze || []
           if values.nil? || values.size == 0
             @logger.debug("Empty ES|QL query result", columns: columns, values: values)
             return
           end
 
-          # this shouldn't never happen but just in case not crash the plugin
+          # this shouldn't happen but just in case not crash the plugin
           if columns.nil? || columns.size == 0
             @logger.error("No columns exist but received values", columns: columns, values: values)
             return
           end
 
-          # TODO: do we need to set `total_hits` to target?
-          #   if not, how do we resolve conflict with existing es-input total_hits field?
-          #   FYI: with DSL it stores in `[@metadata][total_hits]`
-          event.set("[@metadata][total_hits]", values.size)
+          event.set("[@metadata][total_values]", values.size)
+          # @logger.debug("Executing ES|QL values size ", values.size)
           add_requested_fields(event, columns, values)
         end
 
@@ -101,7 +97,7 @@ module LogStash
           end
         end
 
-        # if @target is defined, creates a nested structure to inject result into target field
+        # if @target is defined, creates a nested structure to inject a result into the target field
         # if not defined, directly sets to the top-level event field
         # @param event [LogStash::Event]
         # @param new_key [String] name of the field to set

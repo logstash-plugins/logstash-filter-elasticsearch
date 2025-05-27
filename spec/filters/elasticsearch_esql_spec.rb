@@ -8,6 +8,7 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
   let(:plugin) { LogStash::Filters::Elasticsearch.new(plugin_config) }
   let(:plugin_config) do
     {
+      "query_type" => "esql",
       "query" => "FROM test-index | STATS count() BY field | LIMIT 10"
     }
   end
@@ -17,7 +18,7 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
     it "sets up the ESQL executor with correct parameters" do
       allow(logger).to receive(:debug)
       expect(esql_executor.instance_variable_get(:@query)).to eq(plugin_config["query"])
-      expect(esql_executor.instance_variable_get(:@named_params)).to eq([])
+      expect(esql_executor.instance_variable_get(:@query_params)).to eq({})
       expect(esql_executor.instance_variable_get(:@fields)).to eq({})
       expect(esql_executor.instance_variable_get(:@tag_on_failure)).to eq(["_elasticsearch_lookup_failure"])
     end
@@ -28,8 +29,9 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
       super()
         .merge(
           {
+            "query_type" => "esql",
             "query" => "FROM my-index | WHERE field = ?foo | LIMIT 5",
-            "query_params" => { "named_params" => [{ "foo" => "[bar]" }] },
+            "query_params" => { "foo" => "[bar]" },
             "fields" => { "val" => "val_new", "odd" => "new_odd" }
           })
     }
@@ -62,7 +64,7 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
     end
 
     it "processes the response and adds metadata" do
-      expect(event).to receive(:set).with("[@metadata][total_hits]", 1)
+      expect(event).to receive(:set).with("[@metadata][total_values]", 1)
       expect(event).to receive(:set).with("val_new", "bar")
       esql_executor.send(:process_response, event, response)
     end
@@ -80,7 +82,7 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
 
       event = LogStash::Event.new({ "hello" => "world", "bar" => "resolve_me" })
       expect { esql_executor.process(client, event) }.to_not raise_error
-      expect(event.get("[@metadata][total_hits]")).to eq(1)
+      expect(event.get("[@metadata][total_values]")).to eq(1)
       expect(event.get("hello")).to eq("world")
       expect(event.get("val_new")).to eq("bar")
       expect(event.get("new_odd")).to be_nil # filters out non-exist fields

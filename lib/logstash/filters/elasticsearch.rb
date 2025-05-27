@@ -27,7 +27,10 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Field substitution (e.g. `index-name-%{date_field}`) is available
   config :index, :validate => :string, :default => ""
 
-  # Elasticsearch query string. This can be in DSL or ES|QL query shape.
+  # A type of Elasticsearch query, provided by @query.
+  config :query_type, :validate => %w[esql dsl], :default => "dsl"
+
+  # Elasticsearch query string. This can be in DSL or ES|QL query shape defined by @query_type.
   # Read the Elasticsearch query string documentation.
   #   DSL: https://www.elastic.co/guide/en/elasticsearch/reference/master/query-dsl-query-string-query.html#query-string-syntax
   #   ES|QL: https://www.elastic.co/guide/en/elasticsearch/reference/current/esql.html
@@ -139,12 +142,12 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # What status codes to retry on?
   config :retry_on_status, :validate => :number, :list => true, :default => [500, 502, 503, 504]
 
-  # params to send to ES|QL query, naming params preferred
+  # named placeholders in ES|QL query
   # example,
-  #   if query is "FROM my-index | WHERE some_type = ?type"
-  #   named params can be applied as following via query_params:
+  #   if the query is "FROM my-index | WHERE some_type = ?type"
+  #   named placeholders can be applied as the following in query_params:
   #   query_params => {
-  #     "named_params" => [ {"type" => "%{[type]}"}]
+  #     "type" => "%{[type]}"
   #   }
   config :query_params, :validate => :hash, :default => {}
 
@@ -182,8 +185,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   attr_reader :query_dsl
 
   def register
-    query_type = resolve_query_type
-    case query_type
+    case @query_type
     when "esql"
       invalid_params_with_esql = original_params.keys & %w(index query_template sort docinfo_fields aggregation_fields enable_sort result_size)
       raise LogStash::ConfigurationError, "Configured #{invalid_params_with_esql} params cannot be used with ES|QL query" if invalid_params_with_esql.any?
@@ -204,7 +206,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     @hosts = Array(@hosts).map { |host| host.to_s } # potential SafeURI#to_s
 
     test_connection!
-    validate_es_for_esql_support! if query_type == "esql"
+    validate_es_for_esql_support! if @query_type == "esql"
     setup_serverless
     if get_client.es_transport_client_type == "elasticsearch_transport"
       require_relative "elasticsearch/patches/_elasticsearch_transport_http_manticore"
@@ -216,11 +218,11 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end # def filter
 
   def decorate(event)
-    # Elasticsearch class has an access for `filter_matched`
+    # this Elasticsearch class has access to `filter_matched`
     filter_matched(event)
   end
 
-  # public only to be reuse in testing
+  # public only to be reused in testing
   def prepare_user_agent
     os_name = java.lang.System.getProperty('os.name')
     os_version = java.lang.System.getProperty('os.version')
@@ -426,10 +428,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     params['ssl_enabled'] = @ssl_enabled ||= Array(@hosts).all? { |host| host && host.to_s.start_with?("https") }
   end
 
-  def resolve_query_type
-    @query&.strip&.match?(/\A(?:FROM|ROW|SHOW)/) ? "esql": "dsl"
-  end
-
   def validate_dsl_query_settings!
     #Load query if it exists
     if @query_template
@@ -451,6 +449,10 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     if @query && @query_template
       raise LogStash::ConfigurationError, "Both `query` and `query_template` are set. Use either `query` or `query_template`."
     end
+
+    if original_params.keys.include?("query_params")
+      raise LogStash::ConfigurationError, "`query_params` is not allowed when `query_type => 'dsl'`."
+    end
   end
 
   def validate_ls_version_for_esql_support!
@@ -460,20 +462,12 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def validate_esql_query_and_params!
-    accepted_query_params = %w(named_params)
-    original_query_params = original_params["query_params"] ||= {}
-    invalid_query_params = original_query_params.keys - accepted_query_params
-    raise LogStash::ConfigurationError, "#{accepted_query_params} option(s) accepted in `query_params`, but found #{invalid_query_params} invalid option(s)" if invalid_query_params.any?
-
-    is_named_params_array = original_query_params["named_params"] ? original_query_params["named_params"].class.eql?(Array) : true
-    raise LogStash::ConfigurationError, "`query_params => named_params` is required to be array" unless is_named_params_array
-
-    named_params = original_query_params["named_params"] ||= []
-    named_params_keys = named_params.map(&:keys).flatten
+    illegal_keys = @query_params.keys.reject {|k| k[/^[a-z_][a-z0-9_]*$/] }
+    raise LogStash::ConfigurationError, "Illegal #{illegal_keys} placeholder names in `query_params`" if illegal_keys.any?
 
     placeholders = @query.scan(/(?<=[?])[a-z_][a-z0-9_]*/i)
     placeholders.each do |placeholder|
-      raise LogStash::ConfigurationError, "Placeholder #{placeholder} not found in query" unless named_params_keys.include?(placeholder)
+      raise LogStash::ConfigurationError, "Placeholder #{placeholder} not found in query" unless @query_params.include?(placeholder)
     end
   end
 
