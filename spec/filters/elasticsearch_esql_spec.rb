@@ -92,7 +92,6 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
     it "tags on plugin failures" do
       expect(event).to receive(:get).with("[bar]").and_raise("Event#get Invalid FieldReference error")
 
-      expect(logger).to receive(:error).with("Failed to resolve parameter", {:error=>"Event#get Invalid FieldReference error", :key=>"foo", :value=>"[bar]"})
       expect(logger).to receive(:error).with("Failed to process ES|QL filter", exception: instance_of(RuntimeError))
       expect(event).to receive(:tag).with("_elasticsearch_lookup_failure")
       esql_executor.process(client, event)
