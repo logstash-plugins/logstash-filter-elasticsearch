@@ -133,7 +133,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   # Tags the event on failure to look up geo information. This can be used in later analysis.
   config :tag_on_failure, :validate => :array, :default => ["_elasticsearch_lookup_failure"]
 
-  # If set, the the result set will be nested under the target field
+  # If set, the result set will be nested under the target field
   config :target, :validate => :field_reference
 
   # How many times to retry on failure?
