@@ -188,7 +188,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   def register
     case @query_type
     when "esql"
-      invalid_params_with_esql = original_params.keys & %w(index query_template sort docinfo_fields aggregation_fields enable_sort result_size)
+      invalid_params_with_esql = original_params.keys & %w(index query_template sort fields docinfo_fields aggregation_fields enable_sort result_size)
       raise LogStash::ConfigurationError, "Configured #{invalid_params_with_esql} params cannot be used with ES|QL query" if invalid_params_with_esql.any?
 
       validate_ls_version_for_esql_support!
