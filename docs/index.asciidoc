@@ -154,9 +154,74 @@ The following is a basic {esql} query that sets the food name to transaction eve
 
 Set `config.support_escapes: true` in `logstash.yml` if you need to escape special chars in the query.
 
-In the result event, the plugin sets total result size in `[@metadata][total_values]` field. It also limits the result size to 1 when `FROM` query is used.
+In the result event, the plugin sets total result size in `[@metadata][total_values]` field.
 
-NOTE: If `LIMIT` isn't set, the plugin attaches `| LIMIT 1`.
+[id="plugins-{type}s-{plugin}-esql-event-mapping"]
+===== Mapping {esql} result to {ls} event
+{esql} returns query results in a structured tabular format, where data is organized into _columns_ (fields) and _values_ (entries).
+The plugin maps each value entry to an event, populating corresponding fields.
+For example, a query might produce a table like:
+
+[cols="2,1,1,1,2",options="header"]
+|===
+|`timestamp` |`user_id` | `action` | `status.code` | `status.desc`
+
+|2025-04-10T12:00:00 |123 |login |200 | Success
+|2025-04-10T12:05:00 |456 |purchase |403 | Forbidden (unauthorized user)
+|===
+
+For this case, the plugin creates two JSON look like objects as following:
+[source, json]
+[
+  {
+    "timestamp": "2025-04-10T12:00:00",
+    "user_id": 123,
+    "action": "login",
+    "status": {
+        "code": 200,
+        "desc": "Success"
+    }
+  },
+  {
+    "timestamp": "2025-04-10T12:05:00",
+    "user_id": 456,
+    "action": "purchase",
+    "status": {
+        "code": 403,
+        "desc": "Forbidden (unauthorized user)"
+    }
+  }
+]
+
+NOTE: If your index has a mapping with sub-objects where `status.code` and `status.desc` actually dotted fields, they appear in {ls} events as a nested structure.
+
+The plugin uses the `target` field to determine where to place the results.
+If `target` is not defined, the plugin places the _only_ first result at the root of the event.
+
+[id="plugins-{type}s-{plugin}-esql-multifields"]
+===== Conflict on multi-fields
+
+{esql} query fetches all parent and sub-fields fields if your {es} index has https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/multi-fields[multi-fields] or https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/subobjects[subobjects].
+Since {ls} events cannot contain parent field's concrete value and sub-field values together, the plugin ignores sub-fields with warning and includes parent.
+We recommend using the `RENAME` (or `DROP` to avoid warning) keyword in your {esql} query explicitly rename the fields to include sub-fields into the event.
+
+This is a common occurrence if your template or mapping follows the pattern of always indexing strings as "text" (`field`) + " keyword" (`field.keyword`) multi-field.
+In this case it's recommended to do `KEEP field` if the string is identical and there is only one subfield as the engine will optimize and retrieve the keyword, otherwise you can do `KEEP field.keyword | RENAME field.keyword as field`.
+
+To illustrate the situation with example, assuming your mapping has a time `time` field with `time.min` and `time.max` sub-fields as following:
+[source, ruby]
+    "properties": {
+        "time": { "type": "long" },
+        "time.min": { "type": "long" },
+        "time.max": { "type": "long" }
+    }
+
+The {esql} result will contain all three fields but the plugin cannot map them into {ls} event.
+To avoid this, you can use the `RENAME` keyword to rename the `time` parent field to get all three fields with unique fields.
+[source, ruby]
+    ...
+    query => 'FROM my-index | RENAME time AS time.current'
+    ...
 
 For comprehensive ES|QL syntax reference and best practices, see the https://www.elastic.co/guide/en/elasticsearch/reference/current/esql-syntax.html[{esql} documentation].
 
@@ -603,8 +668,9 @@ Tags the event on failure to look up previous log event information. This can be
 
 Define the target field for placing the result data.
 If this setting is omitted, the target will be the root (top level) of the event.
+It is highly recommended to set when using `query_type=>'esql'` to set all query results into the event.
 
-The destination fields specified in <<plugins-{type}s-{plugin}-fields>>, <<plugins-{type}s-{plugin}-aggregation_fields>>, and <<plugins-{type}s-{plugin}-docinfo_fields>> are relative to this target.
+When `query_type=>'dsl'`, the destination fields specified in <<plugins-{type}s-{plugin}-fields>>, <<plugins-{type}s-{plugin}-aggregation_fields>>, and <<plugins-{type}s-{plugin}-docinfo_fields>> are relative to this target.
 
 For example, if you want the data to be put in the `operation` field:
 [source,ruby]
