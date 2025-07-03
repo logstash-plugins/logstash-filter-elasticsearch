@@ -143,12 +143,11 @@ The following is a basic {esql} query that sets the food name to transaction eve
         api_key => '....'
         query => '
           FROM food-index
-            | WHERE id = "?food_id"
+            | WHERE id == ?food_id
         '
         query_params => {
           "food_id" => "[food][id]"
         }
-        fields => { "food.name" => "food_name" }
       }
     }
 
