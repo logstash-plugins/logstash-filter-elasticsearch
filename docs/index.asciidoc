@@ -169,7 +169,8 @@ For example, a query might produce a table like:
 |2025-04-10T12:05:00 |456 |purchase |403 | Forbidden (unauthorized user)
 |===
 
-For this case, the plugin creates two JSON look like objects as following:
+For this case, the plugin creates two JSON look like objects as below and places them into the `target` field of the event if `target` is defined.
+If `target` is not defined, the plugin places the _only_ first result at the root of the event.
 [source, json]
 [
   {
@@ -193,9 +194,6 @@ For this case, the plugin creates two JSON look like objects as following:
 ]
 
 NOTE: If your index has a mapping with sub-objects where `status.code` and `status.desc` actually dotted fields, they appear in {ls} events as a nested structure.
-
-The plugin uses the `target` field to determine where to place the results.
-If `target` is not defined, the plugin places the _only_ first result at the root of the event.
 
 [id="plugins-{type}s-{plugin}-esql-multifields"]
 ===== Conflict on multi-fields
