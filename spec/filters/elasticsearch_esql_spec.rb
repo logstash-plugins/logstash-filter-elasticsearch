@@ -131,7 +131,7 @@ describe LogStash::Filters::Elasticsearch::EsqlExecutor do
 
         it "sets all query results into event" do
           expected_result = [
-            {"id"=>"foo", "val"=>"bar", "odd"=>nil},
+            {"id"=>"foo", "val"=>"bar"},
             {"id"=>"hello", "val"=>"again", "odd"=>"world"},
             {"id"=>"another", "val"=>"value", "odd"=>"here"}
           ]
