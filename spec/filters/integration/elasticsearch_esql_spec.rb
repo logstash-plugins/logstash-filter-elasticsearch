@@ -72,18 +72,10 @@ describe LogStash::Filters::Elasticsearch, integration: true do
       it "processes the event" do
         plugin.filter(event)
         expect(event.get("[@metadata][total_values]")).to eq(expected_count)
-        fields&.each do | old_key, new_key |
-          expect(event.get(new_key)).not_to be(nil)
+        fields&.each do | field |
+          expect(event.get(field)).not_to be(nil)
         end
       end
-    end
-
-    describe "LIMIT 1 by default" do
-      let(:config) do
-        super().merge("query" => "FROM #{es_index}")
-      end
-
-      include_examples "ESQL query execution", 1
     end
 
     describe "with simple FROM query with LIMIT" do
@@ -102,6 +94,14 @@ describe LogStash::Filters::Elasticsearch, integration: true do
       include_examples "ESQL query execution", 2
     end
 
+    describe "with query params" do
+      let(:config) do
+        super().merge("query" => "FROM #{es_index} | WHERE type==?type", "query_params" => { "type" => "b" })
+      end
+
+      include_examples "ESQL query execution", 2
+    end
+
     describe "when invalid query used" do
       let(:config) do
         super().merge("query" => "FROM undefined index | LIMIT 1")
@@ -114,24 +114,27 @@ describe LogStash::Filters::Elasticsearch, integration: true do
     end
 
     describe "when field enrichment requested" do
-      fields = {"message" => "target_message", "count" => "target_count"}
       let(:config) do
-        super().merge("query" => "FROM #{es_index} | WHERE type==\"b\" | LIMIT 99", "fields" => fields)
+        super().merge("query" => "FROM #{es_index} | WHERE type==\"b\" | LIMIT 99")
       end
 
-      include_examples "ESQL query execution", 2, fields
+      include_examples "ESQL query execution", 2,  %w[message count]
     end
 
     describe "when non-exist field value appear" do
       let(:config) do
-        super().merge("query" => "FROM #{es_index} | LIMIT 99", "fields" => {"message" => "target_message", "count" => "target_count"})
+        super().merge("query" => "FROM #{es_index}", "target" => "target_field")
       end
 
       it "processes the event" do
         plugin.filter(event)
         expect(event.get("[@metadata][total_values]")).to eq(6)
-        expect(event.get("target_message").size).to eq(6)
-        expect(event.get("target_count").size).to eq(5)
+        expect(event.get("target_field").size).to eq(6)
+        values = event.get("target_field")
+        counts = values.count { |entry| entry.key?("count") }
+        messages = values.count { |entry| entry.key?("message") }
+        expect(counts).to eq(5)
+        expect(messages).to eq(6)
       end
     end
   end

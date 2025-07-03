@@ -91,7 +91,7 @@ module LogStash
                 # `unless value.nil?` is a part of `drop_null_columns` that if some of the columns' values are not `nil`, `nil` values appear,
                 # we should continuously filter them out to achieve full `drop_null_columns` on each individual row (ideal `LIMIT 1` result)
                 # we also exclude sub-elements of the base field
-                if row && sub_element_mark_map[column] == false
+                if row[index] && sub_element_mark_map[column] == false
                   value_to_set = ESQL_PARSERS_BY_TYPE[column.type].call(row[index])
                   mapped_data[column.name] = value_to_set
                 end
