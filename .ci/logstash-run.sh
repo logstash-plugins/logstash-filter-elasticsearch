@@ -24,13 +24,10 @@ wait_for_es() {
 }
 
 if [[ "$INTEGRATION" != "true" ]]; then
-  bundle exec rspec --format=documentation spec/filters --tag ~integration --tag ~secure_integration
+  bundle exec rspec --format=documentation spec/filters --tag ~integration
 else
-  if [[ "$SECURE_INTEGRATION" == "true" ]]; then
-    extra_tag_args="--tag secure_integration"
-  else
-    extra_tag_args="--tag ~secure_integration --tag integration"
-  fi
+  # SECURE_INTEGRATION is handled inside the specs
+  extra_tag_args="--tag integration"
 
   wait_for_es
   bundle exec rspec --format=documentation $extra_tag_args --tag update_tests:painless --tag es_version:$ELASTIC_STACK_VERSION spec/filters/integration
