@@ -24,7 +24,7 @@ wait_for_es() {
 }
 
 if [[ "$INTEGRATION" != "true" ]]; then
-  bundle exec rspec --format=documentation spec/filters --tag ~integration --tag ~secure_integration
+  bundle exec rspec --format=documentation spec/filters --tag ~integration
 else
   # SECURE_INTEGRATION is handled inside the specs
   extra_tag_args="--tag integration"
