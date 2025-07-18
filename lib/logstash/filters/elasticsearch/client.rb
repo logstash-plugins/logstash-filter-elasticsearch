@@ -58,9 +58,17 @@ module LogStash
       def search(params={})
         @client.search(params)
       end
+      
+      def esql_query(params={})
+        @client.esql.query(params)
+      end
 
       def info
         @client.info
+      end
+
+      def es_version
+        info&.dig('version', 'number')
       end
 
       def build_flavor
