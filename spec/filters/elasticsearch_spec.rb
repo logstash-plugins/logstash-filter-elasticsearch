@@ -61,7 +61,7 @@ describe LogStash::Filters::Elasticsearch do
         allow(filter_client).to receive(:serverless?).and_return(true)
         allow(filter_client).to receive(:client).and_return(es_client)
 
-        if elastic_ruby_v8_client_available?
+        if defined?(Elastic::Transport)
           allow(es_client).to receive(:info)
                                 .with(a_hash_including(
                                         :headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER))
@@ -90,306 +90,6 @@ describe LogStash::Filters::Elasticsearch do
         plugin = described_class.new(config)
         expect {plugin.register}.to raise_error(LogStash::ConfigurationError)
       end
-    end
-  end
-
-  describe "data fetch" do
-    let(:config) do
-      {
-        "hosts" => ["localhost:9200"],
-        "query" => "response: 404",
-        "fields" => { "response" => "code" },
-        "docinfo_fields" => { "_index" => "es_index" },
-        "aggregation_fields" => { "bytes_avg" => "bytes_avg_ls_field" }
-      }
-    end
-
-    let(:response) do
-      LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_x_1.json")))
-    end
-
-    let(:client) { double(:client) }
-
-    before(:each) do
-      allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
-      if elastic_ruby_v8_client_available?
-        allow(client).to receive(:es_transport_client_type).and_return('elastic_transport')
-      else
-        allow(client).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
-      end
-      allow(client).to receive(:search).and_return(response)
-      allow(plugin).to receive(:test_connection!)
-      allow(plugin).to receive(:setup_serverless)
-      plugin.register
-    end
-
-    after(:each) do
-      Thread.current[:filter_elasticsearch_client] = nil
-    end
-
-    it "should enhance the current event with new data" do
-      plugin.filter(event)
-      expect(event.get("code")).to eq(404)
-      expect(event.get("es_index")).to eq("logstash-2014.08.26")
-      expect(event.get("bytes_avg_ls_field")["value"]).to eq(294)
-    end
-
-    it "should receive all necessary params to perform the search" do
-      expect(client).to receive(:search).with({:q=>"response: 404", :size=>1, :index=>"", :sort=>"@timestamp:desc"})
-      plugin.filter(event)
-    end
-
-    context "when asking to hit specific index" do
-
-      let(:config) do
-        {
-          "index" => "foo*",
-          "hosts" => ["localhost:9200"],
-          "query" => "response: 404",
-          "fields" => { "response" => "code" }
-        }
-      end
-
-      it "should receive all necessary params to perform the search" do
-        expect(client).to receive(:search).with({:q=>"response: 404", :size=>1, :index=>"foo*", :sort=>"@timestamp:desc"})
-        plugin.filter(event)
-      end
-    end
-
-    context "when asking for more than one result" do
-
-      let(:config) do
-        {
-          "hosts" => ["localhost:9200"],
-          "query" => "response: 404",
-          "fields" => { "response" => "code" },
-          "result_size" => 10
-        }
-      end
-
-      let(:response) do
-        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_x_10.json")))
-      end
-
-      it "should enhance the current event with new data" do
-        plugin.filter(event)
-        expect(event.get("code")).to eq([404]*10)
-      end
-    end
-
-    context 'when Elasticsearch 7.x gives us a totals object instead of an integer' do
-      let(:config) do
-        {
-            "hosts" => ["localhost:9200"],
-            "query" => "response: 404",
-            "fields" => { "response" => "code" },
-            "result_size" => 10
-        }
-      end
-
-      let(:response) do
-        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "elasticsearch_7.x_hits_total_as_object.json")))
-      end
-
-      it "should enhance the current event with new data" do
-        plugin.filter(event)
-        expect(event.get("[@metadata][total_hits]")).to eq(13476)
-      end
-    end
-
-    context "if something wrong happen during connection" do
-
-      before(:each) do
-        allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
-        allow(client).to receive(:search).and_raise("connection exception")
-        plugin.register
-      end
-
-      it "tag the event as something happened, but still deliver it" do
-        expect(plugin.logger).to receive(:warn)
-        plugin.filter(event)
-        expect(event.to_hash["tags"]).to include("_elasticsearch_lookup_failure")
-      end
-    end
-
-    # Tagging test for positive results
-    context "Tagging should occur if query returns results" do
-      let(:config) do
-        {
-          "index" => "foo*",
-          "hosts" => ["localhost:9200"],
-          "query" => "response: 404",
-          "add_tag" => ["tagged"]
-        }
-      end
-
-      let(:response) do
-        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_x_10.json")))
-      end
-
-      it "should tag the current event if results returned" do
-        plugin.filter(event)
-        expect(event.to_hash["tags"]).to include("tagged")
-      end
-    end
-
-    context "an aggregation search with size 0 that matches" do
-      let(:config) do
-        {
-          "index" => "foo*",
-          "hosts" => ["localhost:9200"],
-          "query" => "response: 404",
-          "add_tag" => ["tagged"],
-          "result_size" => 0,
-          "aggregation_fields" => { "bytes_avg" => "bytes_avg_ls_field" }
-        }
-      end
-
-      let(:response) do
-        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_size0_agg.json")))
-      end
-
-      it "should tag the current event" do
-        plugin.filter(event)
-        expect(event.get("tags")).to include("tagged")
-        expect(event.get("bytes_avg_ls_field")["value"]).to eq(294)
-      end
-    end
-
-    # Tagging test for negative results
-    context "Tagging should not occur if query has no results" do
-      let(:config) do
-        {
-          "index" => "foo*",
-          "hosts" => ["localhost:9200"],
-          "query" => "response: 404",
-          "add_tag" => ["tagged"]
-        }
-      end
-
-      let(:response) do
-        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_error.json")))
-      end
-
-      it "should not tag the current event" do
-        plugin.filter(event)
-        expect(event.to_hash["tags"]).to_not include("tagged")
-      end
-    end
-    context "testing a simple query template" do
-      let(:config) do
-        {
-          "hosts" => ["localhost:9200"],
-          "query_template" => File.join(File.dirname(__FILE__), "fixtures", "query_template.json"),
-          "fields" => { "response" => "code" },
-          "result_size" => 1
-        }
-      end
-
-      let(:response) do
-        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_x_1.json")))
-      end
-
-      it "should enhance the current event with new data" do
-        plugin.filter(event)
-        expect(event.get("code")).to eq(404)
-      end
-
-    end
-
-    context "testing a simple index substitution" do
-      let(:event) {
-        LogStash::Event.new(
-            {
-                "subst_field" => "subst_value"
-            }
-        )
-      }
-      let(:config) do
-        {
-            "index" => "foo_%{subst_field}*",
-            "hosts" => ["localhost:9200"],
-            "query" => "response: 404",
-            "fields" => { "response" => "code" }
-        }
-      end
-
-      it "should receive substituted index name" do
-        expect(client).to receive(:search).with({:q => "response: 404", :size => 1, :index => "foo_subst_value*", :sort => "@timestamp:desc"})
-        plugin.filter(event)
-      end
-    end
-
-    context "if query result errored but no exception is thrown" do
-      let(:response) do
-        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "request_error.json")))
-      end
-
-      before(:each) do
-        allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
-        allow(client).to receive(:search).and_return(response)
-        plugin.register
-      end
-
-      it "tag the event as something happened, but still deliver it" do
-        expect(plugin.logger).to receive(:warn)
-        plugin.filter(event)
-        expect(event.to_hash["tags"]).to include("_elasticsearch_lookup_failure")
-      end
-    end
-
-    context 'with client-level retries' do
-      let(:config) do
-        super().merge(
-          "retry_on_failure" => 3,
-          "retry_on_status" => [500]
-        )
-      end
-    end
-
-    context "with custom headers" do
-      let(:config) do
-        {
-          "query" => "*",
-          "custom_headers" => { "Custom-Header-1" => "Custom Value 1", "Custom-Header-2" => "Custom Value 2" }
-        }
-      end
-
-      let(:plugin) { LogStash::Filters::Elasticsearch.new(config) }
-      let(:client_double) { double("client") }
-      let(:transport_double) { double("transport", options: { transport_options: { headers: config["custom_headers"] } }) }
-
-      before do
-        allow(plugin).to receive(:get_client).and_return(client_double)
-        if elastic_ruby_v8_client_available?
-          allow(client_double).to receive(:es_transport_client_type).and_return('elastic_transport')
-        else
-          allow(client_double).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
-        end
-        allow(client_double).to receive(:client).and_return(transport_double)
-      end
-
-      it "sets custom headers" do
-        plugin.register
-        client = plugin.send(:get_client).client
-        expect(client.options[:transport_options][:headers]).to match(hash_including(config["custom_headers"]))
-      end
-    end
-
-    context "if query is on nested field" do
-      let(:config) do
-        {
-            "hosts" => ["localhost:9200"],
-            "query" => "response: 404",
-            "fields" => [ ["[geoip][ip]", "ip_address"] ]
-        }
-      end
-
-      it "should enhance the current event with new data" do
-        plugin.filter(event)
-        expect(event.get("ip_address")).to eq("66.249.73.185")
-      end
-
     end
   end
 
@@ -525,7 +225,7 @@ describe LogStash::Filters::Elasticsearch do
       # this spec is a safeguard to trigger an assessment of thread-safety should
       # we choose a different transport adapter in the future.
       transport_class = extract_transport(client).options.fetch(:transport_class)
-      if elastic_ruby_v8_client_available?
+      if defined?(Elastic::Transport)
         allow(client).to receive(:es_transport_client_type).and_return("elastic_transport")
         expect(transport_class).to equal ::Elastic::Transport::Transport::HTTP::Manticore
       else
@@ -845,7 +545,7 @@ describe LogStash::Filters::Elasticsearch do
 
     before(:each) do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
-      if elastic_ruby_v8_client_available?
+      if defined?(Elastic::Transport)
         allow(client).to receive(:es_transport_client_type).and_return('elastic_transport')
       else
         allow(client).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
@@ -864,44 +564,147 @@ describe LogStash::Filters::Elasticsearch do
     end
   end
 
-  describe "#set_to_event_target" do
+  describe "ES|QL" do
 
-    context "when `@target` is nil, default behavior" do
-      let(:config) {{ }}
+    describe "compatibility" do
+      let(:config) {{ "hosts" => ["localhost:9200"], "query_type" => "esql", "query" => "FROM my-index" }}
 
-      it "sets the value directly to the top-level event field" do
-        plugin.send(:set_to_event_target, event, "new_field", %w[value1 value2])
-        expect(event.get("new_field")).to eq(%w[value1 value2])
+      context "when LS doesn't support ES|QL" do
+        let(:ls_version) { LogStash::Filters::Elasticsearch::LS_ESQL_SUPPORT_VERSION }
+        before(:each) do
+          stub_const("LOGSTASH_VERSION", "8.17.0")
+        end
+
+        it "raises a runtime error" do
+          expect { plugin.send(:validate_ls_version_for_esql_support!) }
+            .to raise_error(RuntimeError, /Current version of Logstash does not include Elasticsearch client which supports ES|QL. Please upgrade Logstash to at least #{ls_version}/)
+        end
+      end
+
+      context "when ES doesn't support ES|QL" do
+        let(:es_version) { LogStash::Filters::Elasticsearch::ES_ESQL_SUPPORT_VERSION }
+        let(:client) { double(:client) }
+
+        it "raises a runtime error" do
+          allow(plugin).to receive(:get_client).twice.and_return(client)
+          allow(client).to receive(:es_version).and_return("8.8.0")
+
+          expect { plugin.send(:validate_es_for_esql_support!) }
+            .to raise_error(RuntimeError, /Connected Elasticsearch 8.8.0 version does not supports ES|QL. ES|QL feature requires at least Elasticsearch #{es_version} version./)
+        end
       end
     end
 
-    context "when @target is defined" do
-      let(:config) {{ "target" => "nested" }}
-
-      it "creates a nested structure under the target field" do
-        plugin.send(:set_to_event_target, event, "new_field", %w[value1 value2])
-        expect(event.get("nested")).to eq({ "new_field" => %w[value1 value2] })
+    context "when non-ES|QL params applied" do
+      let(:config) do
+        {
+          "hosts" => ["localhost:9200"],
+          "query_type" => "esql",
+          "query" => "FROM my-index",
+          "index" => "some-index",
+          "docinfo_fields" => { "_index" => "es_index" },
+          "sort" => "@timestamp:desc",
+          "enable_sort" => true,
+          "aggregation_fields" => { "bytes_avg" => "bytes_avg_ls_field" }
+        }
       end
-
-      it "overwrites existing target field with new data" do
-        event.set("nested", { "existing_field" => "existing_value", "new_field" => "value0" })
-        plugin.send(:set_to_event_target, event, "new_field", ["value1"])
-        expect(event.get("nested")).to eq({ "existing_field" => "existing_value", "new_field" => ["value1"] })
+      it "raises a config error" do
+        invalid_params_with_esql = %w(index docinfo_fields sort enable_sort aggregation_fields)
+        error_text = /Configured #{invalid_params_with_esql} params cannot be used with ES|QL query/i
+        expect { plugin.register }.to raise_error LogStash::ConfigurationError, error_text
       end
     end
+
+    describe "#query placeholder" do
+      let(:config) do
+        {
+          "hosts" => ["localhost:9200"],
+          "query_type" => "esql"
+        }
+      end
+
+      context "when query placeholder doesn't exist in the query" do
+        let(:config) {
+          super()
+            .merge(
+              {
+                "query" => "FROM my-index",
+                "query_params" => { "a" => "b" },
+              })
+        }
+
+        it "doesn't complain since not used" do
+          expect { plugin.send(:validate_esql_query_and_params!) }.not_to raise_error
+        end
+      end
+
+      context "when illegal placeholders appear" do
+        let(:config) {
+          super()
+            .merge(
+              {
+                "query" => "FROM my-index | WHERE type = ?type",
+                "query_params" => { "1abcd_efg1" => "1", "$abcd_efg1" => 2, "type" => 3 },
+              })
+        }
+        it "raises a config error" do
+          message = 'Illegal ["1abcd_efg1", "$abcd_efg1"] placeholder names in `query_params`. A valid parameter name starts with a letter and contains letters, digits and underscores only;'
+          expect { plugin.register }.to raise_error LogStash::ConfigurationError, message
+        end
+      end
+
+      context "when query placeholders and `query_params` do not match" do
+        let(:config) {
+          super()
+            .merge(
+              {
+                "query" => "FROM my-index | WHERE type = ?type",
+                "query_params" => {"b" => "c"},
+              })
+        }
+        it "raises a config error" do
+          expect { plugin.register }.to raise_error LogStash::ConfigurationError, /Placeholder type not found in query/
+        end
+      end
+
+      context "when `query_params` is an Array contains {key => val} entries" do
+        let(:config) {
+          super()
+            .merge(
+              {
+                "query" => "FROM my-index",
+                "query_params" => [{ "a" => "b" }, { "c" => "[b]" }, { "e" => 1 }, { "f" => "[g]" }],
+              })
+        }
+
+        it "doesn't complain since not used" do
+          expect { plugin.send(:validate_esql_query_and_params!) }.not_to raise_error
+          expect(plugin.query_params).to eq({ "a" => "b", "c" => "[b]", "e" => 1, "f" => "[g]" })
+        end
+      end
+
+      context "when `query_params` is a Hash" do
+        let(:config) {
+          super()
+            .merge(
+              {
+                "query" => "FROM my-index",
+                "query_params" => { "a" => "b", "c" => "[b]", "e" => 1, "f" => "[g]" },
+              })
+        }
+
+        it "doesn't complain since not used" do
+          expect { plugin.send(:validate_esql_query_and_params!) }.not_to raise_error
+          expect(plugin.query_params).to eq({ "a" => "b", "c" => "[b]", "e" => 1, "f" => "[g]" })
+        end
+      end
+    end if LOGSTASH_VERSION >= '8.17.4'
   end
 
   def extract_transport(client)
     # on 7x: client.transport.transport
     # on >=8.x: client.transport
     client.transport.respond_to?(:transport) ? client.transport.transport : client.transport
-  end
-
-  def elastic_ruby_v8_client_available?
-    Elasticsearch::Transport
-    false
-  rescue NameError # NameError: uninitialized constant Elasticsearch::Transport if Elastic Ruby client is not available
-    true
   end
 
   class MockResponse
