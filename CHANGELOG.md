@@ -1,3 +1,6 @@
+## 3.19.0
+  - ES|QL support [#199](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/199)
+
 ## 3.18.0
   - Add `target` configuration option to store the result into it [#197](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/197)
 
