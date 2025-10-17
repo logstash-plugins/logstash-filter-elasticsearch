@@ -4,6 +4,7 @@ require "logstash/plugin"
 require "logstash/filters/elasticsearch"
 require "logstash/json"
 require "cabin"
+require "manticore"
 require "webrick"
 require "uri"
 
