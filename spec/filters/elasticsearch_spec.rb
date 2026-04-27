@@ -119,15 +119,15 @@ describe LogStash::Filters::Elasticsearch do
                   "cluster_name": "docker-cluster",
                   "cluster_uuid": "DyR1hN03QvuCWXRy3jtb0g",
                   "version": {
-                      "number": "7.13.1",
+                      "number": "8.0.0",
                       "build_flavor": "default",
                       "build_type": "docker",
                       "build_hash": "9a7758028e4ea59bcab41c12004603c5a7dd84a9",
                       "build_date": "2021-05-28T17:40:59.346932922Z",
                       "build_snapshot": false,
-                      "lucene_version": "8.8.2",
-                      "minimum_wire_compatibility_version": "6.8.0",
-                      "minimum_index_compatibility_version": "6.0.0-beta1"
+                      "lucene_version": "9.0.0",
+                      "minimum_wire_compatibility_version": "7.17.0",
+                      "minimum_index_compatibility_version": "7.0.0"
                   },
                   "tagline": "You Know, for Search"
               }
@@ -188,17 +188,6 @@ describe LogStash::Filters::Elasticsearch do
       end
       let(:plugin) { described_class.new(config) }
       let(:event)  { LogStash::Event.new({}) }
-
-      # elasticsearch-ruby 7.17.9 initialize two user agent headers, `user-agent` and `User-Agent`
-      # hence, fail this header size test case
-      xit "client should sent the expect user-agent" do
-        plugin.register
-
-        request = webserver.wait_receive_request
-
-        expect(request.header['user-agent'].size).to eq(1)
-        expect(request.header['user-agent'][0]).to match(/logstash\/\d*\.\d*\.\d* \(OS=.*; JVM=.*\) logstash-filter-elasticsearch\/\d*\.\d*\.\d*/)
-      end
     end
   end
 

@@ -98,12 +98,7 @@ module LogStash
         # @return [Integer]
         def extract_total_from_hits(hits)
           total = hits['total']
-
-          # Elasticsearch 7.x produces an object containing `value` and `relation` in order
-          # to enable unambiguous reporting when the total is only a lower bound; if we get
-          # an object back, return its `value`.
-          return total['value'] if total.kind_of?(Hash)
-          total
+          total.kind_of?(Hash) ? total['value'] : total
         end
 
         # get an array of path elements from a path reference
