@@ -215,12 +215,7 @@ describe LogStash::Filters::Elasticsearch do
       # this spec is a safeguard to trigger an assessment of thread-safety should
       # we choose a different transport adapter in the future.
       transport_class = extract_transport(client).options.fetch(:transport_class)
-      if defined?(Elastic::Transport)
-        allow(client).to receive(:es_transport_client_type).and_return("elastic_transport")
-        expect(transport_class).to equal ::Elastic::Transport::Transport::HTTP::Manticore
-      else
-        expect(transport_class).to equal ::Elasticsearch::Transport::Transport::HTTP::Manticore
-      end
+      expect(transport_class).to equal ::Elastic::Transport::Transport::HTTP::Manticore
     end
 
     it 'uses a client with sufficient connection pool size' do
@@ -549,11 +544,6 @@ describe LogStash::Filters::Elasticsearch do
 
     before(:each) do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
-      if defined?(Elastic::Transport)
-        allow(client).to receive(:es_transport_client_type).and_return('elastic_transport')
-      else
-        allow(client).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
-      end
       allow(plugin).to receive(:test_connection!)
       allow(plugin).to receive(:setup_serverless)
       plugin.register

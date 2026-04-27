@@ -58,11 +58,6 @@ describe LogStash::Filters::Elasticsearch::DslExecutor do
 
     before(:each) do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
-      if defined?(Elastic::Transport)
-        allow(client).to receive(:es_transport_client_type).and_return('elastic_transport')
-      else
-        allow(client).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
-      end
       allow(client).to receive(:search).and_return(response)
       allow(plugin).to receive(:test_connection!)
       allow(plugin).to receive(:setup_serverless)
@@ -287,11 +282,6 @@ describe LogStash::Filters::Elasticsearch::DslExecutor do
 
       before do
         allow(plugin).to receive(:get_client).and_return(client_double)
-        if defined?(Elastic::Transport)
-          allow(client_double).to receive(:es_transport_client_type).and_return('elastic_transport')
-        else
-          allow(client_double).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
-        end
         allow(client_double).to receive(:client).and_return(transport_double)
       end
 
