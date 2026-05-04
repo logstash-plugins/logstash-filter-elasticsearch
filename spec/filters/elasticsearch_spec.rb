@@ -62,17 +62,9 @@ describe LogStash::Filters::Elasticsearch do
         allow(filter_client).to receive(:serverless?).and_return(true)
         allow(filter_client).to receive(:client).and_return(es_client)
 
-        if defined?(Elastic::Transport)
-          allow(es_client).to receive(:info)
-                                .with(a_hash_including(
-                                        :headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER))
-                                .and_raise(Elastic::Transport::Transport::Errors::BadRequest.new)
-        else
-          allow(es_client).to receive(:info)
-                                .with(a_hash_including(
-                                        :headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER))
-                                .and_raise(Elasticsearch::Transport::Transport::Errors::BadRequest.new)
-        end
+        allow(es_client).to receive(:info)
+          .with(a_hash_including(:headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER))
+          .and_raise(Elastic::Transport::Transport::Errors::BadRequest.new)
       end
 
       it "raises an exception when Elastic Api Version is not supported" do

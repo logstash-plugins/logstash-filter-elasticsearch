@@ -1,7 +1,7 @@
 # encoding: utf-8
-require "elasticsearch"
 require "base64"
-
+require "elasticsearch"
+require "elastic/transport/transport/http/manticore"
 
 module LogStash
   module Filters
@@ -43,7 +43,7 @@ module LogStash
 
         client_options = {
                        hosts: hosts,
-             transport_class: get_transport_client_class,
+             transport_class: ::Elastic::Transport::Transport::HTTP::Manticore,
            transport_options: transport_options,
                          ssl: ssl_options,
             retry_on_failure: options[:retry_on_failure],
@@ -110,12 +110,6 @@ module LogStash
         string == Base64.strict_encode64(Base64.strict_decode64(string))
       rescue ArgumentError
         false
-      end
-
-      def get_transport_client_class
-        # Elasticsearch 8+ uses `elastic-transport` gem (part of the elasticsearch gem)
-        require "elastic/transport/transport/http/manticore"
-        ::Elastic::Transport::Transport::HTTP::Manticore
       end
     end
   end

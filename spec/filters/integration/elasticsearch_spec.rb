@@ -84,9 +84,7 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
     end
 
     it "fails to register plugin" do
-      expect { plugin.register }.to raise_error elastic_ruby_v8_client_available? ?
-                                                  Elastic::Transport::Transport::Errors::Unauthorized :
-                                                  Elasticsearch::Transport::Transport::Errors::Unauthorized
+      expect { plugin.register }.to raise_error Elastic::Transport::Transport::Errors::Unauthorized
     end
 
   end if ELASTIC_SECURITY_ENABLED
@@ -151,11 +149,5 @@ describe LogStash::Filters::Elasticsearch, :integration => true do
         end
       end
     end
-  end
-  def elastic_ruby_v8_client_available?
-    Elasticsearch::Transport
-    false
-  rescue NameError # NameError: uninitialized constant Elasticsearch::Transport if Elastic Ruby client is not available
-    true
   end
 end
