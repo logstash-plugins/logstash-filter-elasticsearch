@@ -163,7 +163,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   include MonitorMixin
   attr_reader :shared_client
 
-  LS_ESQL_SUPPORT_VERSION = "8.17.4" # the version started using elasticsearch-ruby v8
+  LS_ESQL_SUPPORT_VERSION = "8.17.4"
   ES_ESQL_SUPPORT_VERSION = "8.11.0"
 
   ##
@@ -209,9 +209,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     test_connection!
     validate_es_for_esql_support! if @query_type == "esql"
     setup_serverless
-    if get_client.es_transport_client_type == "elasticsearch_transport"
-      require_relative "elasticsearch/patches/_elasticsearch_transport_http_manticore"
-    end
   end # def register
 
   def filter(event)
@@ -405,11 +402,7 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
   end
 
   def test_connection!
-    begin
-      get_client.client.ping
-    rescue Elasticsearch::UnsupportedProductError
-      raise LogStash::ConfigurationError, "Could not connect to a compatible version of Elasticsearch"
-    end
+    get_client.client.ping
   end
 
   def setup_serverless
