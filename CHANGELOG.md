@@ -1,6 +1,3 @@
-## 4.3.2
-  - Remove elasticsearch-ruby 7.x patch logics and allow to update it to 9.x version [#213](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/213)
-
 ## 4.3.1
   - Added support for encoded and non encoded api-key formats on plugin configuration [#203](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/203)
 
