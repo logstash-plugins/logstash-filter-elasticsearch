@@ -1,3 +1,6 @@
+## 4.4.0
+  - Drop a support for Logstash 7.x by requiring `elasticsearch` gem >= 8. Logstash 8+ continues to work as before. [#213](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/213)
+
 ## 4.3.1
   - Added support for encoded and non encoded api-key formats on plugin configuration [#203](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/203)
 
