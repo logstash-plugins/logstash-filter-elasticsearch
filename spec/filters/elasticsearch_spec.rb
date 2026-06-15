@@ -62,17 +62,9 @@ describe LogStash::Filters::Elasticsearch do
         allow(filter_client).to receive(:serverless?).and_return(true)
         allow(filter_client).to receive(:client).and_return(es_client)
 
-        if defined?(Elastic::Transport)
-          allow(es_client).to receive(:info)
-                                .with(a_hash_including(
-                                        :headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER))
-                                .and_raise(Elastic::Transport::Transport::Errors::BadRequest.new)
-        else
-          allow(es_client).to receive(:info)
-                                .with(a_hash_including(
-                                        :headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER))
-                                .and_raise(Elasticsearch::Transport::Transport::Errors::BadRequest.new)
-        end
+        allow(es_client).to receive(:info)
+          .with(a_hash_including(:headers => LogStash::Filters::ElasticsearchClient::DEFAULT_EAV_HEADER))
+          .and_raise(Elastic::Transport::Transport::Errors::BadRequest.new)
       end
 
       it "raises an exception when Elastic Api Version is not supported" do
@@ -119,15 +111,15 @@ describe LogStash::Filters::Elasticsearch do
                   "cluster_name": "docker-cluster",
                   "cluster_uuid": "DyR1hN03QvuCWXRy3jtb0g",
                   "version": {
-                      "number": "7.13.1",
+                      "number": "8.0.0",
                       "build_flavor": "default",
                       "build_type": "docker",
                       "build_hash": "9a7758028e4ea59bcab41c12004603c5a7dd84a9",
                       "build_date": "2021-05-28T17:40:59.346932922Z",
                       "build_snapshot": false,
-                      "lucene_version": "8.8.2",
-                      "minimum_wire_compatibility_version": "6.8.0",
-                      "minimum_index_compatibility_version": "6.0.0-beta1"
+                      "lucene_version": "9.0.0",
+                      "minimum_wire_compatibility_version": "7.17.0",
+                      "minimum_index_compatibility_version": "7.0.0"
                   },
                   "tagline": "You Know, for Search"
               }
@@ -188,17 +180,6 @@ describe LogStash::Filters::Elasticsearch do
       end
       let(:plugin) { described_class.new(config) }
       let(:event)  { LogStash::Event.new({}) }
-
-      # elasticsearch-ruby 7.17.9 initialize two user agent headers, `user-agent` and `User-Agent`
-      # hence, fail this header size test case
-      xit "client should sent the expect user-agent" do
-        plugin.register
-
-        request = webserver.wait_receive_request
-
-        expect(request.header['user-agent'].size).to eq(1)
-        expect(request.header['user-agent'][0]).to match(/logstash\/\d*\.\d*\.\d* \(OS=.*; JVM=.*\) logstash-filter-elasticsearch\/\d*\.\d*\.\d*/)
-      end
     end
   end
 
@@ -226,12 +207,7 @@ describe LogStash::Filters::Elasticsearch do
       # this spec is a safeguard to trigger an assessment of thread-safety should
       # we choose a different transport adapter in the future.
       transport_class = extract_transport(client).options.fetch(:transport_class)
-      if defined?(Elastic::Transport)
-        allow(client).to receive(:es_transport_client_type).and_return("elastic_transport")
-        expect(transport_class).to equal ::Elastic::Transport::Transport::HTTP::Manticore
-      else
-        expect(transport_class).to equal ::Elasticsearch::Transport::Transport::HTTP::Manticore
-      end
+      expect(transport_class).to equal ::Elastic::Transport::Transport::HTTP::Manticore
     end
 
     it 'uses a client with sufficient connection pool size' do
@@ -560,11 +536,6 @@ describe LogStash::Filters::Elasticsearch do
 
     before(:each) do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
-      if defined?(Elastic::Transport)
-        allow(client).to receive(:es_transport_client_type).and_return('elastic_transport')
-      else
-        allow(client).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
-      end
       allow(plugin).to receive(:test_connection!)
       allow(plugin).to receive(:setup_serverless)
       plugin.register

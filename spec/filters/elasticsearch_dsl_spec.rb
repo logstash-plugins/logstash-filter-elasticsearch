@@ -58,11 +58,6 @@ describe LogStash::Filters::Elasticsearch::DslExecutor do
 
     before(:each) do
       allow(LogStash::Filters::ElasticsearchClient).to receive(:new).and_return(client)
-      if defined?(Elastic::Transport)
-        allow(client).to receive(:es_transport_client_type).and_return('elastic_transport')
-      else
-        allow(client).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
-      end
       allow(client).to receive(:search).and_return(response)
       allow(plugin).to receive(:test_connection!)
       allow(plugin).to receive(:setup_serverless)
@@ -120,26 +115,6 @@ describe LogStash::Filters::Elasticsearch::DslExecutor do
       it "should enhance the current event with new data" do
         plugin.filter(event)
         expect(event.get("code")).to eq([404]*10)
-      end
-    end
-
-    context 'when Elasticsearch 7.x gives us a totals object instead of an integer' do
-      let(:plugin_config) do
-        {
-          "hosts" => ["localhost:9200"],
-          "query" => "response: 404",
-          "fields" => { "response" => "code" },
-          "result_size" => 10
-        }
-      end
-
-      let(:response) do
-        LogStash::Json.load(File.read(File.join(File.dirname(__FILE__), "fixtures", "elasticsearch_7.x_hits_total_as_object.json")))
-      end
-
-      it "should enhance the current event with new data" do
-        plugin.filter(event)
-        expect(event.get("[@metadata][total_hits]")).to eq(13476)
       end
     end
 
@@ -307,11 +282,6 @@ describe LogStash::Filters::Elasticsearch::DslExecutor do
 
       before do
         allow(plugin).to receive(:get_client).and_return(client_double)
-        if defined?(Elastic::Transport)
-          allow(client_double).to receive(:es_transport_client_type).and_return('elastic_transport')
-        else
-          allow(client_double).to receive(:es_transport_client_type).and_return('elasticsearch_transport')
-        end
         allow(client_double).to receive(:client).and_return(transport_double)
       end
 

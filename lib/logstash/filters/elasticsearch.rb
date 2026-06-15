@@ -209,9 +209,6 @@ class LogStash::Filters::Elasticsearch < LogStash::Filters::Base
     test_connection!
     validate_es_for_esql_support! if @query_type == "esql"
     setup_serverless
-    if get_client.es_transport_client_type == "elasticsearch_transport"
-      require_relative "elasticsearch/patches/_elasticsearch_transport_http_manticore"
-    end
   end # def register
 
   def filter(event)
