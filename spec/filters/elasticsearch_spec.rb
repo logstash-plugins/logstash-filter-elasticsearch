@@ -325,6 +325,18 @@ describe LogStash::Filters::Elasticsearch do
           it_behaves_like "a plugin that sets the ApiKey authorization header"
         end
 
+        context "with an Elastic Cloud API key (essu_ prefix)" do
+          let(:api_key_value) { "essu_VFZGblZreFhTekJ4ZDB4M2NHUnZRMEU2YzNWd1pYSnpaV055WlhRPQ==AAAAAAAA" }
+
+          it "sets the Authorization header verbatim without re-encoding" do
+            plugin.register
+            client = plugin.send(:get_client).client
+            auth_header = extract_transport(client).options[:transport_options][:headers]['Authorization']
+
+            expect(auth_header).to eql("ApiKey #{api_key_value}")
+          end
+        end
+
         context 'user also set' do
           let(:config) { super().merge({ 'api_key' => 'foo:bar', 'user' => 'another' }) }
 
