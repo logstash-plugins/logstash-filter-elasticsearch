@@ -1,6 +1,8 @@
 # Logstash Plugin
 
-[![Travis Build Status](https://travis-ci.com/logstash-plugins/logstash-filter-elasticsearch.svg)](https://travis-ci.com/logstash-plugins/logstash-filter-elasticsearch)
+[![Unit Tests](https://github.com/logstash-plugins/logstash-filter-elasticsearch/actions/workflows/unit-tests.yml/badge.svg?branch=main)](https://github.com/logstash-plugins/logstash-filter-elasticsearch/actions/workflows/unit-tests.yml)
+[![Integration Tests](https://github.com/logstash-plugins/logstash-filter-elasticsearch/actions/workflows/integration-tests.yml/badge.svg?branch=main)](https://github.com/logstash-plugins/logstash-filter-elasticsearch/actions/workflows/integration-tests.yml)
+[![Secure Integration Tests](https://github.com/logstash-plugins/logstash-filter-elasticsearch/actions/workflows/secure-integration-tests.yml/badge.svg?branch=main)](https://github.com/logstash-plugins/logstash-filter-elasticsearch/actions/workflows/secure-integration-tests.yml)
 
 This is a plugin for [Logstash](https://github.com/elastic/logstash).
 
