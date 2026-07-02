@@ -1,3 +1,6 @@
+## 4.4.1
+  - Support Elastic Cloud API keys in the `api_key` option, which now accepts an `id:api_key` pair, its base64-encoded form, or an `essu_` Cloud API key, and rejects an unrecognized format at startup [#215](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/215)
+
 ## 4.4.0
   - Drop a support for Logstash 7.x by requiring `elasticsearch` gem >= 8. Logstash 8+ continues to work as before. [#213](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/213)
 
