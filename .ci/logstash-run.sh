@@ -13,7 +13,7 @@ wait_for_es() {
     es_url="https://elasticsearch:9200"
   fi
   count=120
-  while ! curl $CURL_OPTS -u elastic:$ELASTIC_PASSWORD --silent $es_url && [[ $count -ne 0 ]]; do
+  while ! curl $CURL_OPTS -u elastic:${ELASTIC_PASSWORD:-password} --silent $es_url && [[ $count -ne 0 ]]; do
     count=$(( $count - 1 ))
     [[ $count -eq 0 ]] && return 1
     sleep 1
