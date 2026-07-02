@@ -6,6 +6,9 @@ export PATH=$BUILD_DIR/gradle/bin:$PATH
 # CentOS 7 using curl defaults does not enable TLSv1.3
 CURL_OPTS="-k --tlsv1.2 --tls-max 1.3"
 
+# Default password used by the test harness; Travis injected this via env.
+ELASTIC_PASSWORD="${ELASTIC_PASSWORD:-password}"
+
 wait_for_es() {
   echo "Waiting for elasticsearch to respond..."
   es_url="http://elasticsearch:9200"
