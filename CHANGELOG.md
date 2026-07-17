@@ -1,3 +1,6 @@
+## 3.19.1
+  - Support base64-encoded and Elastic Cloud (`essu_`-prefixed) API keys in the `api_key` option; reject unrecognized formats at startup. [#229](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/229)
+
 ## 3.19.0
   - ES|QL support [#199](https://github.com/logstash-plugins/logstash-filter-elasticsearch/pull/199)
 
