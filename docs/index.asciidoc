@@ -83,7 +83,7 @@ template.json:
 [source,json]
 --------------------------------------------------
 {
-  "size": 1,
+  "result_size": 1,
   "sort" : [ { "@timestamp" : "desc" } ],
   "query": {
     "query_string": {
